@@ -1,0 +1,7 @@
+channels:
+  - bioconda
+  - defaults
+dependencies:
+  - r-tidyr
+  - r-dplyr
+  - r-data.table
