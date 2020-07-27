@@ -1,5 +1,5 @@
 # snakemake_RNA-seq
-This repo is forked from [KoesGroup/Snakemake_hisat-DESeq](https://github.com/KoesGroup/Snakemake_hisat-DESeq)
+This repo is forked from [KoesGroup/Snakemake_hisat-DESeq](https://github.com/KoesGroup/Snakemake_hisat-DESeq) and customized by me.
 
 A snakemake pipeline for the analysis of RNA-seq data that makes use of [hisat2](https://ccb.jhu.edu/software/hisat2/index.shtml) and [Stringtie](https://ccb.jhu.edu/software/stringtie/).
 
