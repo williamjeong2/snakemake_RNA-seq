@@ -11,7 +11,7 @@ import pandas as pd
 # Configuration
 ###############
 
-configfile: "config.yaml" # where to find parameters
+configfile: "/data/config.yaml" # where to find parameters
 WORKING_DIR = config["working_dir"]
 RESULT_DIR = config["result_dir"]
 THREADS = config["threads"]
@@ -159,6 +159,8 @@ rule stringtie:
         r1 = WORKING_DIR + "stringtie/{sample}/transcript.gtf",
         r2 = WORKING_DIR + "stringtie/{sample}/gene_abundances.tsv",
         r3 = WORKING_DIR + "stringtie/{sample}/cov_ref.gtf"
+    message:
+        "assemble RNA-Seq alignments into potential transcripts."
     threads: THREADS
     params:
         gtf = WORKING_DIR + "genome/Homo_sapiens.GRCh38.100.gtf"
@@ -169,10 +171,12 @@ rule create_PKM_table:
     input:
         WORKING_DIR
     output:
-        r1 = RESULT_DIR + 'gene_FPKM.csv'
+        r1 = RESULT_DIR + "gene_FPKM.csv",
         outdir = RESULT_DIR
     params:
         dataset = config["merge_PKM"]["organism"]
+    message:
+        "create gene and transcript FPKM(if single-end reads, RPKM)."
     conda:
         "envs/merge_fpkm.yaml"
     shell:
@@ -188,6 +192,8 @@ rule create_counts_table:
         gff  = WORKING_DIR + "genome/Homo_sapiens.GRCh38.100.gtf"
     output:
         RESULT_DIR + "counts.txt"
+    message:
+        "create read count talbe"
     threads: THREADS
     shell:
         "featureCounts -T {threads} -a {input.gff} -t exon -g gene_id -o {output} {input.bams}"

@@ -27,6 +27,6 @@ make_plots:
 #   proteins_fasta: ""
 #   transcriptome_gtf: "ftp://ftp.ensembl.org/pub/release-100/gtf/homo_sapiens/Homo_sapiens.GRCh38.100.gtf.gz"
 result_dir: results/
-units: samples.tsv
+units: data/samples.tsv
 working_dir: temp/
 threads: 60
