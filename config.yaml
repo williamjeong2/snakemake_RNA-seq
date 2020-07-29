@@ -27,3 +27,4 @@ make_plots:
 result_dir: results/
 units: samples.tsv
 working_dir: temp/
+threads: 60

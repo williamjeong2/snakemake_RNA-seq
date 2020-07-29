@@ -14,6 +14,7 @@ import pandas as pd
 configfile: "config.yaml" # where to find parameters
 WORKING_DIR = config["working_dir"]
 RESULT_DIR = config["result_dir"]
+THREADS = config["threads"]
 
 ########################
 # Samples and conditions
@@ -72,22 +73,13 @@ rule all:
     message:
         "Job done! Removing temporary directory"
 
-
 #######
 # Rules
 #######
 
-#####################
-# Download references
-#####################
-
-
-
-
 ##################################
 # Fastp
 ##################################
-
 
 rule fastp:
     input:
@@ -97,7 +89,7 @@ rule fastp:
         fq2  = WORKING_DIR + "trimmed/" + "{sample}_R2_trimmed.fq.gz",
         html = RESULT_DIR + "fastp/{sample}.html"
     message:"trimming {wildcards.sample} reads"
-    threads: 30
+    threads: THREADS
     log:
         RESULT_DIR + "fastp/{sample}.log.txt"
     params:
@@ -128,7 +120,7 @@ rule hisat_index:
         [WORKING_DIR + "genome/genome_tran." + str(i) + ".ht2" for i in range(1,9)]
     message:
         "indexing genome"
-    threads: 60
+    threads: THREADS
     shell:
         "cp scripts/make_grch38_tran.sh genome/ && sh genome/make_grch38_tran.sh"
 
@@ -145,7 +137,7 @@ rule hisat_mapping:
         sampleName = "{sample}"
     message:
         "mapping reads to genome to bam files."
-    threads: 60
+    threads: THREADS
     run:
         if sample_is_single_end(params.sampleName):
             shell("hisat2 -p {threads} --summary-file {output.sum} --met-file {output.met} -q -x {params.indexName} \
@@ -167,7 +159,7 @@ rule stringtie:
         r1 = WORKING_DIR + "stringtie/{sample}/transcript.gtf",
         r2 = WORKING_DIR + "stringtie/{sample}/gene_abundances.tsv",
         r3 = WORKING_DIR + "stringtie/{sample}/cov_ref.gtf"
-    threads: 60
+    threads: THREADS
     params:
         gtf = WORKING_DIR + "genome/Homo_sapiens.GRCh38.100.gtf"
     shell:
@@ -191,5 +183,6 @@ rule create_counts_table:
         gff  = WORKING_DIR + "genome/Homo_sapiens.GRCh38.100.gtf"
     output:
         RESULT_DIR + "counts.txt"
+    threads: THREADS
     shell:
-        "featureCounts -T 60 -a {input.gff} -t exon -g gene_id -o {output} {input.bams}"
+        "featureCounts -T {threads} -a {input.gff} -t exon -g gene_id -o {output} {input.bams}"
