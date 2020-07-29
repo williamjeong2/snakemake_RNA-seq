@@ -166,12 +166,17 @@ rule stringtie:
         "stringtie -p {threads} -G {params.gtf} --rf -e -B -o {output.r1} -A {output.r2} -C {output.r3} --rf {input.bams}"
 
 rule create_PKM_table:
+    input:
+        WORKING_DIR
     output:
         r1 = RESULT_DIR + 'gene_FPKM.csv'
+        outdir = RESULT_DIR
+    params:
+        dataset = config["merge_PKM"]["organism"]
     conda:
         "envs/merge_fpkm.yaml"
     shell:
-        "Rscript scripts/merge_RFPKM.r"
+        "Rscript scripts/merge_RFPKM.r -i {input} -o {output.outdir} -d {params.dataset}"
 
 #########################################
 # Get table containing the raw counts
