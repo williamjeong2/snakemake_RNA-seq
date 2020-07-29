@@ -61,9 +61,9 @@ rule all:
     input:
         #expand(WORKING_DIR + "mapped/{sample}.bam", sample = SAMPLES),
         RESULT_DIR + "counts.txt",
-        RESULT_DIR + 'gene_FPKM.csv',
         # expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample=SAMPLES),
-        expand(WORKING_DIR + 'stringtie/{sample}/transcript.gtf', sample=SAMPLES)
+        expand(WORKING_DIR + 'stringtie/{sample}/transcript.gtf', sample=SAMPLES),
+        RESULT_DIR + 'gene_FPKM.csv'
 #        RESULT_DIR + "result.csv",
 #        RESULT_DIR + "plotSelection.txt",
         #clusts = WORKING_DIR + "results/clusters.txt",
@@ -105,17 +105,17 @@ rule fastp:
         qualified_quality_phred = config["fastp"]["qualified_quality_phred"]
     run:
         if sample_is_single_end(params.sampleName):
-            shell("fastp --thread {threads} --html {output.html} \
+            shell("fastp --thread {threads}  --html {output.html} \
             --qualified_quality_phred {params.qualified_quality_phred} \
             --in1 {input} --out1 {output.fq1} \
-            2> {log};")
+            2> {log}; \
+            touch {output.fq2}")
         else:
-            shell("fastp --thread {threads} --html {output.html} \
+            shell("fastp --thread {threads}  --html {output.html} \
             --qualified_quality_phred {params.qualified_quality_phred} \
             --detect_adapter_for_pe \
             --in1 {input[0]} --in2 {input[1]} --out1 {output.fq1} --out2 {output.fq2}; \
             2> {log}")
-
 
 #########################
 # RNA-Seq read alignement
@@ -145,7 +145,6 @@ rule hisat_mapping:
         sampleName = "{sample}"
     message:
         "mapping reads to genome to bam files."
-    priority: 3
     threads: 60
     run:
         if sample_is_single_end(params.sampleName):
@@ -169,7 +168,6 @@ rule stringtie:
         r2 = WORKING_DIR + "stringtie/{sample}/gene_abundances.tsv",
         r3 = WORKING_DIR + "stringtie/{sample}/cov_ref.gtf"
     threads: 60
-    priority: 2
     params:
         gtf = WORKING_DIR + "genome/Homo_sapiens.GRCh38.100.gtf"
     shell:
@@ -178,7 +176,6 @@ rule stringtie:
 rule create_PKM_table:
     output:
         r1 = RESULT_DIR + 'gene_FPKM.csv'
-    priority: 1
     conda:
         "envs/merge_fpkm.yaml"
     shell:
