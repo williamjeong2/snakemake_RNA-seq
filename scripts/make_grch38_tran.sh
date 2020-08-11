@@ -80,7 +80,7 @@ if [ ! -f $GTF_FILE ] ; then
        ${HISAT2_EXON_SCRIPT} ${GTF_FILE} > genome.exon
 fi
 
-CMD="${HISAT2_BUILD_EXE} -p 60 genome.fa --ss genome.ss --exon genome.exon genome_tran"
+CMD="${HISAT2_BUILD_EXE} -p 60 genome.fa --ss genome.ss --exon genome.exon genome"
 echo Running $CMD
 if $CMD ; then
 	echo "genome index built; you may remove fasta files"

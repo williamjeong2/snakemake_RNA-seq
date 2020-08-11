@@ -37,7 +37,23 @@ RUN Rscript -e 'install.packages("data.table", repos="http://cran.us.r-project.o
 RUN Rscript -e 'install.packages("tidyr", repos="http://cran.us.r-project.org", dependencies=TRUE)'
 RUN Rscript -e 'install.packages("dplyr", repos="http://cran.us.r-project.org", dependencies=TRUE)'
 RUN Rscript -e 'install.packages("BiocManager", repos="http://cran.us.r-project.org", dependencies=TRUE); \
-                BiocManager::install(version = "3.11"); BiocManager::install("biomaRt")'
+                BiocManager::install(version = "3.11");  \
+                BiocManager::install("DESeq2"); library(DESeq2)\
+                BiocManager::install("ggplot2"); library(ggplot2)\
+                BiocManager::install("clusterProfiler"); library(clusterProfiler)\
+                BiocManager::install("ReactomePA"); library(ReactomePA)\
+                BiocManager::install("DOSE"); library(DOSE)\
+                BiocManager::install("KEGG.db"); library(KEGG.db)\
+                BiocManager::install("org.Mm.eg.db"); library(org.Mm.eg.db)\
+                BiocManager::install("org.Hs.eg.db"); library(org.Hs.eg.db)\
+                BiocManager::install("pheatmap"); library(pheatmap)\
+                BiocManager::install("genefilter"); library(genefilter)\
+                BiocManager::install("RColorBrewer"); library(RColorBrewer)\
+                BiocManager::install("GO.db"); library(GO.db)\
+                BiocManager::install("topGO"); library(topGO)\
+                BiocManager::install("gage"); library(gage)\
+                BiocManager::install("ggsci"); library(ggsci)\
+                BiocManager::install("biomaRt"); library(biomaRt)'
 
 ####################
 # pull git repo and install conda env for rna sequencing
