@@ -11,3 +11,5 @@ dependencies:
   - samtools=1.9.0
   - fastp=0.20.1
   - wget=1.20.1
+  - multiqc=1.9
+  - pandoc=2.10.1

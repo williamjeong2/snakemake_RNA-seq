@@ -11,7 +11,7 @@ import pandas as pd
 # Configuration
 ###############
 
-configfile: "/data/config.yaml" # where to find parameters
+configfile: "config.yaml" # where to find parameters
 WORKING_DIR = config["working_dir"]
 RESULT_DIR = config["result_dir"]
 THREADS = config["threads"]
@@ -60,16 +60,12 @@ def get_trimmed(wildcards):
 #################
 rule all:
     input:
-        #expand(WORKING_DIR + "mapped/{sample}.bam", sample = SAMPLES),
-        RESULT_DIR + "counts.txt",
-        # expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample=SAMPLES),
+        expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample=SAMPLES),
         expand(WORKING_DIR + 'stringtie/{sample}/transcript.gtf', sample=SAMPLES),
-        RESULT_DIR + 'gene_FPKM.csv'
-#        RESULT_DIR + "result.csv",
-#        RESULT_DIR + "plotSelection.txt",
-        #clusts = WORKING_DIR + "results/clusters.txt",
-        #plots  = RESULT_DIR + "plots.pdf",
-        #final = RESULT_DIR + "final.txt"
+        expand(RESULT_DIR + "fastqc/{sample}_R1_fastqc.html", sample=SAMPLES),
+        RESULT_DIR + 'gene_FPKM.csv',
+        RESULT_DIR + "counts.txt",
+        RESULT_DIR + "multiqc/multiqc_report.html"
     message:
         "Job done! Removing temporary directory"
 
@@ -90,8 +86,9 @@ rule fastp:
         html = RESULT_DIR + "fastp/{sample}.html"
     message:"trimming {wildcards.sample} reads"
     threads: THREADS
+    priority: 10
     log:
-        RESULT_DIR + "fastp/{sample}.log.txt"
+        RESULT_DIR + "logs/fastp/{sample}.log.txt"
     params:
         sampleName = "{sample}",
         qualified_quality_phred = config["fastp"]["qualified_quality_phred"]
@@ -99,20 +96,37 @@ rule fastp:
         if sample_is_single_end(params.sampleName):
             shell("fastp --thread {threads}  --html {output.html} \
             --qualified_quality_phred {params.qualified_quality_phred} \
-            --in1 {input} --out1 {output.fq1} \
-            2> {log}; \
+            --in1 {input} --out1 {output.fq1} 2> {log}; \
             touch {output.fq2}")
         else:
             shell("fastp --thread {threads}  --html {output.html} \
             --qualified_quality_phred {params.qualified_quality_phred} \
             --detect_adapter_for_pe \
-            --in1 {input[0]} --in2 {input[1]} --out1 {output.fq1} --out2 {output.fq2}; \
-            2> {log}")
+            --in1 {input[0]} --in2 {input[1]} --out1 {output.fq1} --out2 {output.fq2} 2> {log}")
+
+
+rule fastqc:
+    input:
+        get_fastq
+    output:
+        html1 = RESULT_DIR + "fastqc/{sample}_R1_fastqc.html",
+        html2 = RESULT_DIR + "fastqc/{sample}_R2_fastqc.html"
+    threads: THREADS
+    params:
+        sampleName = "{sample}",
+        path = RESULT_DIR + "fastqc/"
+    run:
+        if sample_is_single_end(params.sampleName):
+            shell("fastqc -t {threads} {input[0]} --outdir={params.path}")
+        else:
+            shell("fastqc -t {threads} {input[0]} {input[1]} --outdir={params.path}")
+
 
 #########################
 # RNA-Seq read alignement
 #########################
-if config["indexed"].upper().find("TRUE") == -1:
+
+if config["need_indexed"].upper().find("NEED") >= 0:
     if config["organism"].upper().find("HOMO") or config["organism"].upper().find("HUMAN") >= 0:
         rule ref_download:
             input:
@@ -136,7 +150,7 @@ if config["indexed"].upper().find("TRUE") == -1:
 
 
 if config["aligner"].upper().find("HISAT2") >= 0:
-    if config["indexed"].upper().find("TRUE") == -1:
+    if config["need_indexed"].upper().find("NEED") >= 0:
         rule hisat_index:
             input:
                 fasta = WORKING_DIR + "genome/genome.fa",
@@ -157,6 +171,8 @@ if config["aligner"].upper().find("HISAT2") >= 0:
             bams = WORKING_DIR + "mapped/{sample}.sorted.bam",
             sum  = RESULT_DIR + "logs/{sample}_sum.txt",
             met  = RESULT_DIR + "logs/{sample}_met.txt"
+        log:
+            RESULT_DIR + "logs/hisat2/{sample}.log.txt"
         params:
             indexName = WORKING_DIR + "genome/genome",
             sampleName = "{sample}"
@@ -167,13 +183,14 @@ if config["aligner"].upper().find("HISAT2") >= 0:
             if sample_is_single_end(params.sampleName):
                 shell("hisat2 -p {threads} --summary-file {output.sum} --met-file {output.met} -q -x {params.indexName} \
                 -U {input[0]} | samtools view -@ {threads} -Sb -F 4 | samtools sort -@ {threads} -o {output.bams}; \
-                samtools index {output.bams}")
+                samtools index {output.bams} 2> {log}")
             else:
                 shell("hisat2 -p {threads} --summary-file {output.sum} --met-file {output.met} -q -x {params.indexName} \
                 -1 {input[0]} -2 {input[1]} | samtools view -@ {threads} -Sb -F 4 | samtools sort -@ {threads} -o {output.bams}; \
-                samtools index {output.bams}")
+                samtools index {output.bams} 2> {log}")
+
 elif config["aligner"].upper().find("STAR") >= 0:
-    if config["indexed"].upper().find("TRUE") == -1:
+    if config["need_indexed"].upper().find("NEED") >= 0:
         rule star_index:
             input:
                 fasta = WORKING_DIR + "genome/genome.fa", 
@@ -191,28 +208,32 @@ elif config["aligner"].upper().find("STAR") >= 0:
             --sjdbGTFfile {input.gtf} \
             --sjdbOverhang 100
             """
+
     rule star_mapping:
         input:
             get_trimmed
         output:
-            bams = WORKING_DIR + "mapped/{sample}.sorted.bam",
+            bams = WORKING_DIR + "mapped/{sample}.sorted.bam"
+        log:
+            RESULT_DIR + "logs/star/{sample}.log.txt"
         params:
             gtf = WORKING_DIR + 'genome/genome.gtf',
-            index = WORKING_DIR + 'genome/'
+            index = WORKING_DIR + 'genome',
+            prefix = WORKING_DIR + "mapped/{sample}.",
+            outdir = WORKING_DIR + "mapped",
+            sampleName = "{sample}"
+        message:
+            "mapping reads to genome to bam files."
         threads: THREADS
-        shell:"""
-        STAR --runThreadN {threads} \
-        --sjdbOverhang 100 \
-        --outSAMunmapped Within \
-        --outputSAMtype BAM Unsorted \
-        --outStd BAM_Unsorted \
-        --sjdbGTFfile {params.gtf} \
-        --genomeDir {params.index}
-        --readFilesIn {input} \
-        --readFilesCommand zcat \
-        | samtools sort -@ {threads} -O bam -o {output.bam}
-        """
-
+        run:
+            if sample_is_single_end(params.sampleName):
+                shell("STAR --runThreadN {threads} --genomeDir {params.index} --outSAMunmapped None --outSAMtype BAM Unsorted \
+                --outStd BAM_Unsorted --sjdbGTFfile {params.gtf} --readFilesIn {input[0]} --readFilesCommand zcat \
+                --outFileNamePrefix {params.prefix} | samtools sort -@ {threads} -O bam -o {output.bams} 2> {log}")
+            else:
+                shell("STAR --runThreadN {threads} --genomeDir {params.index} --outSAMunmapped None --outSAMtype BAM Unsorted \
+                --outStd BAM_Unsorted --sjdbGTFfile {params.gtf} --readFilesIn {input[0]} {input[1]} --readFilesCommand zcat \
+                --outFileNamePrefix {params.prefix} | samtools sort -@ {threads} -O bam -o {output.bams} 2> {log}")
 
 #########################################
 # Get table containing the RPKM or FPKM
@@ -225,28 +246,32 @@ rule stringtie:
         r1 = WORKING_DIR + "stringtie/{sample}/transcript.gtf",
         r2 = WORKING_DIR + "stringtie/{sample}/gene_abundances.tsv",
         r3 = WORKING_DIR + "stringtie/{sample}/cov_ref.gtf"
+    log:
+        RESULT_DIR + "logs/stringtie/{sample}.log.txt"
     message:
         "assemble RNA-Seq alignments into potential transcripts."
     threads: THREADS
     params:
         gtf = WORKING_DIR + "genome/genome.gtf"
     shell:
-        "stringtie -p {threads} -G {params.gtf} --rf -e -B -o {output.r1} -A {output.r2} -C {output.r3} --rf {input.bams}"
+        "stringtie -p {threads} -G {params.gtf} --rf -e -B -o {output.r1} -A {output.r2} -C {output.r3} --rf {input.bams} 2> {log}"
 
 rule create_PKM_table:
     input:
+        expand(WORKING_DIR + "stringtie/{sample}/transcript.gtf", sample = SAMPLES),
         WORKING_DIR
     output:
         r1 = RESULT_DIR + "gene_FPKM.csv",
-        outdir = RESULT_DIR
+        r2 = RESULT_DIR + "transcript_FPKM.csv"
     params:
-        dataset = config["merge_PKM"]["organism"]
+        dataset = config["merge_PKM"]["organism"],
+        outdir = directory(RESULT_DIR)
     message:
         "create gene and transcript FPKM(if single-end reads, RPKM)."
     conda:
         "envs/merge_fpkm.yaml"
     shell:
-        "Rscript scripts/merge_RFPKM.r -i {input} -o {output.outdir} -d {params.dataset}"
+        "Rscript scripts/merge_RFPKM.r -i {input[1]} -o {params.outdir} -d {params.dataset}"
 
 #########################################
 # Get table containing the raw counts
@@ -263,3 +288,19 @@ rule create_counts_table:
     threads: THREADS
     shell:
         "featureCounts -T {threads} -a {input.gff} -t exon -g gene_id -o {output} {input.bams}"
+
+#########################################
+# Report for all results
+#########################################
+rule multiqc:
+    input:
+        expand(RESULT_DIR + "fastqc/{sample}_R1_fastqc.html", sample=SAMPLES),
+        expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample=SAMPLES),
+        RESULT_DIR + "counts.txt"
+    output:
+        RESULT_DIR + "multiqc/multiqc_report.html"
+    params:
+        data_dir = [WORKING_DIR, RESULT_DIR],
+        res_dir = RESULT_DIR + "multiqc/"
+    shell:
+        "multiqc {params.data_dir} -o {params.res_dir}"
