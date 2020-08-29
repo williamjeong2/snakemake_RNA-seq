@@ -1,8 +1,8 @@
 channels:
-  - bioconda
+  - conda-forge
   - defaults
 dependencies:
-  - r-base=4.0.0
+  - r-base=4.0.2
   - r-tidyr
   - r-dplyr
   - r-data.table

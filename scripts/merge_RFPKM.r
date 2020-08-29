@@ -29,8 +29,9 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
-mart = useEnsembl("ENSEMBL_MART_ENSEMBL", mirror = "www")
-mart = useMart(biomart = "ensembl", dataset = opt$dataset, host = "www.ensembl.org")
+# mart = useEnsembl("ENSEMBL_MART_ENSEMBL", mirror = "www")
+# mart = useMart(biomart = "ensembl", dataset = opt$dataset, host = "www.ensembl.org")
+
 bmIDs = getBM(attributes=c('ensembl_transcript_id','description'),mart = mart)
 bmIDs_g = getBM(attributes = c('ensembl_gene_id', 'description'), mart = mart)
 

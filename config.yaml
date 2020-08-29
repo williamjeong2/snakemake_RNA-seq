@@ -1,37 +1,18 @@
 ---
+threads: 60
 organism: homo_sapiens
 indexed: true
 aligner: star # HISAT2 or STAR
+refs:
+  hg_release_ver: 100
+  mm_release_ver: 
+result_dir: results/
+units: data/samples.tsv
+working_dir: temp/
 
-
-blast:
-  evalue: 1e-10
-  maxTargets: "1"
-  outFmt: "6 qseqid evalue length mismatch salltitles"
 deseq2:
   maxfraction: "0.7"
 fastp:
   qualified_quality_phred: 15
 merge_PKM:
   organism: hsapiens_gene_ensembl
-filter_for_plots:
-  average_samples: "yes"
-  maximum_pvalue: "0.05"
-  minimum_foldchange: "2"
-  minimum_reads: "100"
-make_plots:
-  colour_of_heatmap: "c(\"white\",\"green\",\"green4\",\"violet\",\"purple\")"
-  height_in_dendrogram: "1.5"
-  membership_min: "0.2"
-  method_of_clustering: pam
-  number_of_clusters: "2"
-  opt_clust_number: average_silhouette_width
-refs:
-  # annotation: annotations/Petunia_axillaris_v1.6.2_proteins.mapman_annotation.txt.gz
-  # proteins_fasta: ""
-  hg_release_ver: 100
-  mm_release_ver: 
-result_dir: results/
-units: data/samples.tsv
-working_dir: temp/
-threads: 60

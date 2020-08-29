@@ -67,7 +67,7 @@ rule all:
         RESULT_DIR + "counts.txt",
         RESULT_DIR + "multiqc/multiqc_report.html"
     message:
-        "Job done! Removing temporary directory"
+        "Job done!"
 
 #######
 # Rules
@@ -104,7 +104,6 @@ rule fastp:
             --detect_adapter_for_pe \
             --in1 {input[0]} --in2 {input[1]} --out1 {output.fq1} --out2 {output.fq2} 2> {log}")
 
-
 rule fastqc:
     input:
         get_fastq
@@ -120,7 +119,6 @@ rule fastqc:
             shell("fastqc -t {threads} {input[0]} --outdir={params.path}")
         else:
             shell("fastqc -t {threads} {input[0]} {input[1]} --outdir={params.path}")
-
 
 #########################
 # RNA-Seq read alignement

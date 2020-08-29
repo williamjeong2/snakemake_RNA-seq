@@ -1,36 +1,30 @@
 FROM ubuntu:18.04
 MAINTAINER Jinwoo jeong <jinwoo5480@snu.ac.kr>
 
-# ENV R_BASE_VERSION 4.0.0
+SHELL ["/bin/bash", "-c"]
+ARG DEBIAN_FRONTEND=noninteractive
 
-RUN sed -i.bak -re "s/([a-z]{2}.)?archive.ubuntu.com|security.ubuntu.com/mirror.kakao.com/g" /etc/apt/sources.list
+# RUN sed -i.bak -re "s/([a-z]{2}.)?archive.ubuntu.com|security.ubuntu.com/mirror.kakao.com/g" /etc/apt/sources.list
 RUN apt-get update \
     && apt-get install -y python3 python3-pip wget git less vim \
-    && pip3 install pandas 
-RUN apt-get install -y libxml2-dev curl libcurl4-gnutls-dev libssl-dev
+    && pip3 install pandas
+RUN apt-get install -y libxml2-dev curl libssl-dev libgsl0-dev libcairo2-dev libhdf5-dev
 RUN echo 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/' >> /etc/apt/sources.list
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 51716619E084DAB9
-RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y r-base r-base-dev r-recommended
+RUN apt-get update && apt-get install -y r-base r-base-dev r-recommended
 
 ####################
 # install R
 ####################
 
-RUN apt-get update && apt-get install -y --no-install-recommends locales && \
+RUN apt-get update && apt-get install -y --no-install-recommends locales apt-utils && \
     echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && \
     locale-gen en_US.UTF-8 && \
     LC_ALL=en_US.UTF-8 && \
     LANG=en_US.UTF-8 && \
     /usr/sbin/update-locale LANG=en_US.UTF-8 && \
     TERM=xterm && \
-    apt-get install -y --no-install-recommends \
-    libssl-dev \
-    libcurl4-openssl-dev \
-    libxml2-dev \
-    libgsl0-dev \
-    libcairo2-dev \
-    libhdf5-dev \
-    && apt-get update
+    apt-get update
 
 RUN Rscript -e 'install.packages("optparse", repos="http://cran.rstudio.com/", dependencies=TRUE)'
 RUN Rscript -e 'install.packages("data.table", repos="http://cran.rstudio.com/", dependencies=TRUE)'
@@ -54,35 +48,35 @@ RUN Rscript -e 'BiocManager::install("gage"); library(gage);'
 RUN Rscript -e 'BiocManager::install("ggsci"); library(ggsci);'
 RUN Rscript -e 'BiocManager::install("curl"); library(curl);'
 RUN Rscript -e 'BiocManager::install("biomaRt"); library(biomaRt)'
-# RUN Rscript -e 'BiocManager::install("reactome.db");' # error occured
+
+# error occured
+# RUN Rscript -e 'BiocManager::install("reactome.db");'
 # RUN Rscript -e 'BiocManager::install("ReactomePA"); library(ReactomePA);'
 
+# install miniconda to /miniconda
+RUN curl -LO http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+RUN bash Miniconda3-latest-Linux-x86_64.sh -p /miniconda -b
+RUN rm Miniconda3-latest-Linux-x86_64.sh
+ENV PATH=/miniconda/bin:${PATH}
+RUN conda update -y conda
+
 # pull git repo and install conda env for rna sequencing
-ENV PATH /opt/conda/bin:${PATH}
+WORKDIR /home/
+RUN git clone https://github.com/WilliamJeong2/snakemake_RNA-seq.git
+RUN conda env create -n rnaseq -f snakemake_RNA-seq/envs/docker.yml
 
-RUN mkdir /opt/tmp && cd /opt/tmp/ \
-    && wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-    && bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda \
-    && rm Miniconda3-latest-Linux-x86_64.sh \
-    && git clone https://github.com/WilliamJeong2/snakemake_RNA-seq.git
-RUN echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
-    echo "conda activate base" >> ~/.bashrc
-SHELL [ "/bin/bash", "--login", "-c" ]
-RUN cd opt/tmp/snakemake_RNA-seq \
-    && conda env create -n rnaseq -f envs/docker.yml \
-    && conda init bash \
-    && /bin/bash -c ". activate rnaseq"
-SHELL ["/bin/bash", "-c"]
-SHELL ["conda", "run", "-n", "rnaseq", "/bin/bash", "-c"]
-RUN echo "conda activate rnaseq" > ~/.bashrc
-ENV PATH /opt/conda/envs/rnaseq/bin:${PATH}
-
-## Clean up
+# Clean up
 RUN cd / && \
-    rm -rf /tmp/* && \
-    apt-get autoremove -y && \
-    apt-get autoclean -y && \
-    rm -rf /var/lib/apt/lists/* && \
-    apt-get clean
+  rm -rf /tmp/* && \
+  apt-get autoremove -y && \
+  apt-get autoclean -y && \
+  rm -rf /var/lib/apt/lists/* && \
+  apt-get clean
 
-WORKDIR /opt/tmp/snakemake_RNA-seq
+COPY conda_init.sh /opt
+RUN cat /opt/conda_init.sh >> /root/.bashrc
+RUN echo "conda activate rnaseq" >> /root/.bashrc
+
+# Make RUN commands use the new environment
+SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
+CMD /bin/bash -c "source /root/.bashrc"

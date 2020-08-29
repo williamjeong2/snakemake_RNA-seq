@@ -1,2 +1,0 @@
-conda init
-source ~/.bashrc
