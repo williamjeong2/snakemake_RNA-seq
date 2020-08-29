@@ -7,7 +7,7 @@ RUN sed -i.bak -re "s/([a-z]{2}.)?archive.ubuntu.com|security.ubuntu.com/mirror.
 RUN apt-get update \
     && apt-get install -y python3 python3-pip wget git less vim \
     && pip3 install pandas 
-RUN apt-get install -y libxml2-dev curl libcurl4-gnutls-dev libssl-dev
+RUN apt-get install -y libxml2-dev curl libcurl4-gnutls-dev libssl-dev libcurl4-openssl-dev
 RUN echo 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/' >> /etc/apt/sources.list
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 51716619E084DAB9
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y r-base r-base-dev r-recommended
