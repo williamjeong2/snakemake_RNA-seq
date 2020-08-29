@@ -74,9 +74,11 @@ RUN cd / && \
   apt-get clean
 
 COPY conda_init.sh /opt
-RUN cat /opt/conda_init.sh >> /root/.bashrc
+RUN cat /opt/conda_init.sh >> /root/.bashrc && rm /opt/conda_init.sh
 RUN echo "conda activate rnaseq" >> /root/.bashrc
 
 # Make RUN commands use the new environment
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 CMD /bin/bash -c "source /root/.bashrc"
+
+WORKDIR /home/snakemake_RNA-seq
