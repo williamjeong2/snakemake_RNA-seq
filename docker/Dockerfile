@@ -73,7 +73,7 @@ RUN cd / && \
   rm -rf /var/lib/apt/lists/* && \
   apt-get clean
 
-COPY conda_init.sh /opt
+COPY /home/snakemake_RNA-seq/docker/conda_init.sh /opt
 RUN cat /opt/conda_init.sh >> /root/.bashrc && rm /opt/conda_init.sh
 RUN echo "conda activate rnaseq" >> /root/.bashrc
 
