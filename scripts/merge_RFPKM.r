@@ -13,7 +13,8 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager",repos = "http://cran.us.r-project.org")
 # update.packages(ask = FALSE,repos = "http://cran.us.r-project.org")
 BiocManager::install(version = "3.11")
-BiocManager::install("biomaRt")
+if (!requireNamespace("biomaRt", quietly = TRUE))
+  BiocManager::install("biomaRt")
 # BiocManager::install("digest")
 library(biomaRt)
 library(optparse)
@@ -22,15 +23,14 @@ option_list = list(
     make_option(c("-d", "--dataset"), type="character", default="hsapiens_gene_ensembl", metavar="character"),
     make_option(c("-i", "--indir"), type="character", metavar="character"), # wpath : ~/temp/
     make_option(c("-o", "--outdir"), type="character", default="results/", metavar="character") # result_path : ~/results/
-    )
 )
 
 # parse the command-line arguments and pass them to a list called 'opt'
-opt_parser = OptionParser(option_list=option_list);
-opt = parse_args(opt_parser);
+opt_parser = OptionParser(option_list=option_list)
+opt = parse_args(opt_parser)
 
-# mart = useEnsembl("ENSEMBL_MART_ENSEMBL", mirror = "www")
-# mart = useMart(biomart = "ensembl", dataset = opt$dataset, host = "www.ensembl.org")
+mart = useEnsembl("ENSEMBL_MART_ENSEMBL", mirror = "www")
+mart = useMart(biomart = "ensembl", dataset = opt$dataset, host = "www.ensembl.org")
 
 bmIDs = getBM(attributes=c('ensembl_transcript_id','description'),mart = mart)
 bmIDs_g = getBM(attributes = c('ensembl_gene_id', 'description'), mart = mart)
