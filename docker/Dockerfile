@@ -73,7 +73,7 @@ RUN cd / && \
   rm -rf /var/lib/apt/lists/* && \
   apt-get clean
 
-RUN cat /home/snakemake_RNA-seq/docker/conda_init.sh >> /root/.bashrc && rm /opt/conda_init.sh
+RUN cat /home/snakemake_RNA-seq/docker/conda_init.sh >> /root/.bashrc
 RUN echo "conda activate rnaseq" >> /root/.bashrc
 
 # Make RUN commands use the new environment
