@@ -8,7 +8,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y python3 python3-pip wget git less vim \
     && pip3 install pandas
-RUN apt-get install -y libxml2-dev curl libssl-dev libgsl0-dev libcairo2-dev libhdf5-dev libcurl4-openssl-dev
+RUN apt-get install -y libxml2-dev curl libssl-dev libgsl0-dev libcairo2-dev libhdf5-dev libcurl4-openssl-dev libglpk-dev libbz2-dev liblzma-dev
 RUN echo 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/' >> /etc/apt/sources.list
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 51716619E084DAB9
 RUN apt-get update && apt-get install -y r-base r-base-dev r-recommended
@@ -31,7 +31,7 @@ RUN Rscript -e 'install.packages("data.table", repos="http://cran.rstudio.com/",
 RUN Rscript -e 'install.packages("tidyr", repos="http://cran.rstudio.com/", dependencies=TRUE)'
 RUN Rscript -e 'install.packages("dplyr", repos="http://cran.rstudio.com/", dependencies=TRUE)'
 RUN Rscript -e 'install.packages("BiocManager", repos="http://cran.rstudio.com/", dependencies=TRUE);'
-RUN Rscript -e 'BiocManager::install(version = "3.11"); '
+RUN Rscript -e 'BiocManager::install(version = "3.12");'
 RUN Rscript -e 'BiocManager::install("DESeq2"); library(DESeq2);'
 RUN Rscript -e 'BiocManager::install("ggplot2"); library(ggplot2);'
 RUN Rscript -e 'BiocManager::install("clusterProfiler"); library(clusterProfiler);'
@@ -63,7 +63,7 @@ RUN conda update -y conda
 # pull git repo and install conda env for rna sequencing
 WORKDIR /home/
 RUN git clone https://github.com/WilliamJeong2/snakemake_RNA-seq.git
-RUN conda env create -n rnaseq -f snakemake_RNA-seq/envs/docker.yml
+RUN conda env create -n rnaseq -f snakemake_RNA-seq/envs/global_env.yaml
 
 # Clean up
 RUN cd / && \
