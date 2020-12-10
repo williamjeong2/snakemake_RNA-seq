@@ -11,13 +11,11 @@ import pandas as pd
 # Configuration
 ###############
 
-configfile: "config.yaml" # where to find parameters
+configfile: "data/config.yaml" # where to find parameters
 WORKING_DIR = config["working_dir"]
 RESULT_DIR = config["result_dir"]
 THREADS = config["threads"]
 
-########################
-# Samples and conditions
 ########################
 
 # read the tabulated separated table containing the sample, condition and fastq file information∂DE
@@ -62,7 +60,8 @@ rule all:
     input:
         expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample=SAMPLES),
         expand(WORKING_DIR + 'stringtie/{sample}/transcript.gtf', sample=SAMPLES),
-        expand(RESULT_DIR + "fastqc/{sample}_R1_fastqc.html", sample=SAMPLES),
+#        expand(RESULT_DIR + "fastqc/{sample}_fastqc.html", sample=SAMPLES),
+        WORKING_DIR + "genome/genome.gtf",
         RESULT_DIR + 'gene_FPKM.csv',
         RESULT_DIR + "counts.txt",
         RESULT_DIR + "multiqc/multiqc_report.html"
@@ -94,60 +93,68 @@ rule fastp:
         qualified_quality_phred = config["fastp"]["qualified_quality_phred"]
     run:
         if sample_is_single_end(params.sampleName):
-            shell("fastp --thread {threads}  --html {output.html} \
+            shell("fastp --thread {threads} --html {output.html} \
             --qualified_quality_phred {params.qualified_quality_phred} \
             --in1 {input} --out1 {output.fq1} 2> {log}; \
             touch {output.fq2}")
         else:
-            shell("fastp --thread {threads}  --html {output.html} \
+            shell("fastp --thread {threads} --html {output.html} \
             --qualified_quality_phred {params.qualified_quality_phred} \
             --detect_adapter_for_pe \
             --in1 {input[0]} --in2 {input[1]} --out1 {output.fq1} --out2 {output.fq2} 2> {log}")
 
-rule fastqc:
-    input:
-        get_fastq
-    output:
-        html1 = RESULT_DIR + "fastqc/{sample}_R1_fastqc.html",
-        html2 = RESULT_DIR + "fastqc/{sample}_R2_fastqc.html"
-    threads: THREADS
-    params:
-        sampleName = "{sample}",
-        path = RESULT_DIR + "fastqc/"
-    run:
-        if sample_is_single_end(params.sampleName):
-            shell("fastqc -t {threads} {input[0]} --outdir={params.path}")
-        else:
-            shell("fastqc -t {threads} {input[0]} {input[1]} --outdir={params.path}")
+#rule fastqc:
+#    input:
+#        get_fastq
+#    output:
+#        html1 = RESULT_DIR + "fastqc/{sample}_fastqc.html"
+#    threads: THREADS
+#    params:
+#        sampleName = "{sample}",
+#        path = RESULT_DIR + "fastqc/"
+#    run:
+#        if sample_is_single_end(params.sampleName):
+#            shell("fastqc -t {threads} {input[0]} --outdir={params.path}")
+#        else:
+#            shell("fastqc -t {threads} {input[0]} {input[1]} --outdir={params.path}")
+#           
 
 #########################
 # RNA-Seq read alignement
 #########################
-
 if config["need_indexed"].upper().find("NEED") >= 0:
-    if config["organism"].upper().find("HOMO") or config["organism"].upper().find("HUMAN") >= 0:
-        rule ref_download:
-            input:
-                version = config["ref"]["hg_release_ver"] # release version
+    if config["organism"].upper().find("HOMO") >= 0 or config["organism"].upper().find("HUMAN") >= 0:
+        rule ref_download_hg:
             output:
-                directory(WORKING_DIR + 'genome')
+                fasta = WORKING_DIR + "genome/genome.fa",
+                gtf = WORKING_DIR + "genome/genome.gtf"
+            params:
+                version = config["ref"]["hg_release_ver"], # release version, It must be string
+                outdir = WORKING_DIR + "genome/"
             shell:"""
-            mkdir {output} && \
-            wget ftp://ftp.ensembl.org/pub/release-{input.version}/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz -O genome.fa.gz | tar -zxvf -C {output} &&\
-            wget ftp://ftp.ensembl.org/pub/release-{input.version}/gtf/homo_sapiens/Homo_sapiens.GRCh38.{input.version}.gtf.gz -O genome.gtf.gz | tar -zxvf -C {output}"""
-    elif config["organism"].upper().find("MUS") or config["organism"].upper().find("MOUSE") >= 0:
-        rule ref_download:
-            input:
-                version = config["ref"]["mm_release_ver"] # release version
+            mkdir -p {params.outdir} && \
+            wget ftp://ftp.ensembl.org/pub/release-{params.version}/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz -O genome.fa.gz && gunzip -c genome.fa.gz > {output.fasta} && \
+            wget ftp://ftp.ensembl.org/pub/release-{params.version}/gtf/homo_sapiens/Homo_sapiens.GRCh38.{params.version}.gtf.gz -O genome.gtf.gz && gunzip -c genome.gtf.gz > {output.gtf}"""
+    elif config["organism"].upper().find("MUS") >= 0 or config["organism"].upper().find("MOUSE") >= 0:
+        rule ref_download_mm:
             output:
-                directory(WORKING_DIR + 'genome')
+                fasta = WORKING_DIR + "genome/genome.fa",
+                gtf = WORKING_DIR + "genome/genome.gtf"
+            params:
+                version = config["ref"]["mm_release_ver"], # release version, It must be string
+                outdir = WORKING_DIR + "genome/"
             shell:"""
-            mkdir {output} && \
-            wget ftp://ftp.ensembl.org/pub/release-{input.version}/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna.primary_assembly.fa.gz -O genome.fa.gz | tar -zxvf -C {output} &&\
-            wget ftp://ftp.ensembl.org/pub/release-{input.version}/gtf/mus_musculus/Mus_musculus.GRCm38.{input.version}.gtf.gz -O genome.gtf.gz | tar -zxvf -C {output}"""
+            mkdir -p {params.outdir} && \
+            wget ftp://ftp.ensembl.org/pub/release-{params.version}/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna.primary_assembly.fa.gz -O genome.fa.gz && tar -zxvf genome.fa.gz -C {params.outdir} && \
+            wget ftp://ftp.ensembl.org/pub/release-{params.version}/gtf/mus_musculus/Mus_musculus.GRCm38.{params.version}.gtf.gz -O genome.gtf.gz && tar -zxvf genome.gtf.gz -C {params.outdir}"""
 
 
 if config["aligner"].upper().find("HISAT2") >= 0:
+    if config["organism"].upper().find("HOMO") >= 0 or config["organism"].upper().find("HUMAN") >= 0:
+        ref_ver = config["ref"]["hg_release_ver"]
+    elif config["organism"].upper().find("MUS") >= or config["organism"].upper().find("MOUSE") >= 0:
+        ref_ver = config["ref"]["mm_release_ver"]
+
     if config["need_indexed"].upper().find("NEED") >= 0:
         rule hisat_index:
             input:
@@ -157,9 +164,17 @@ if config["aligner"].upper().find("HISAT2") >= 0:
                 [WORKING_DIR + "genome/genome." + str(i) + ".ht2" for i in range(1,9)]
             message:
                 "indexing genome"
+            params:
+                WORKING_DIR + "genome/",
+                ref_ver
             threads: THREADS
-            shell:
-                "cp scripts/make_grch38_tran.sh genome/ && sh genome/make_grch38_tran.sh"
+            run:
+                if config["organism"].upper().find("HOMO") >= 0 or config["organism"].upper().find("HUMAN") >= 0:
+                    shell("cp scripts/make_grch38_tran.sh {params[1]} && \
+                    (cd {params[1]} && sh make_grch38_tran.sh {params[2]})")
+                elif config["organism"].upper().find("MUS") >= or config["organism"].upper().find("MOUSE") >= 0:
+                    shell("cp scripts/make_grcm38_tran.sh {params[1]} && \
+                    (cd {params[1]} && sh make_grcm38_tran.sh {params[2]})")
 
     rule hisat_mapping:
         input:
@@ -256,8 +271,7 @@ rule stringtie:
 
 rule create_PKM_table:
     input:
-        expand(WORKING_DIR + "stringtie/{sample}/transcript.gtf", sample = SAMPLES),
-        WORKING_DIR
+        expand(WORKING_DIR + "stringtie/{sample}/transcript.gtf", sample = SAMPLES)
     output:
         r1 = RESULT_DIR + "gene_FPKM.csv",
         r2 = RESULT_DIR + "transcript_FPKM.csv"
@@ -269,7 +283,7 @@ rule create_PKM_table:
     conda:
         "envs/merge_fpkm.yaml"
     shell:
-        "Rscript scripts/merge_RFPKM.r -i {input[1]} -o {params.outdir} -d {params.dataset}"
+        "Rscript scripts/merge_RFPKM.r -i {input} -o {params.outdir} -d {params.dataset}"
 
 #########################################
 # Get table containing the raw counts
