@@ -17,7 +17,9 @@ RUN apt-get update && apt-get install -y r-base r-base-dev r-recommended
 # install R
 ####################
 
-RUN apt-get update && apt-get install -y --no-install-recommends locales apt-utils && \
+RUN apt-get update -y && \
+    apt-get install -y apt-utils 2>&1 | grep -v "debconf: delaying package configuration, since apt-utils is not installed" && \
+    apt-get install -y --no-install-recommends locales && \
     echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && \
     locale-gen en_US.UTF-8 && \
     LC_ALL=en_US.UTF-8 && \
@@ -66,7 +68,8 @@ RUN conda update -y conda
 # pull git repo and install conda env for rna sequencing
 WORKDIR /home/
 RUN git clone https://github.com/WilliamJeong2/snakemake_RNA-seq.git
-RUN conda env create -n rnaseq -f snakemake_RNA-seq/envs/global_env.yaml
+RUN conda install -c conda-forge mamba
+RUN mamba env create -f snakemake_RNA-seq/envs/global_env.yaml
 
 # Clean up
 RUN cd / && \
