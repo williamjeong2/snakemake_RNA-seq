@@ -1,15 +1,16 @@
+name: rnaseq
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
   - python=3.8
-  - pandas=1.0.5
-  - snakemake=5.26.1
+  - pandas=1.1.5
+  - snakemake=5.30.2
   - subread=2.0.1
-  - hisat2=2.2.0
-  - samtools=1.9.0
+  - hisat2=2.2.1
+  - samtools=1.11
   - fastp=0.20.1
   - wget=1.20.1
   - multiqc=1.9
-  - pandoc=2.10.1
+  - pandoc=2.11.2

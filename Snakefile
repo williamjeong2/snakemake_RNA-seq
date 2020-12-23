@@ -6,6 +6,7 @@
 # Libraries
 ###########
 import pandas as pd
+import os
 
 ###############
 # Configuration
@@ -18,13 +19,26 @@ THREADS = config["threads"]
 
 ########################
 
+# Edited
 # read the tabulated separated table containing the sample, condition and fastq file information∂DE
-units = pd.read_table(config["units"], dtype=str).set_index(["sample"], drop=False)
+units = pd.read_excel(config["units"], sheet_name = "samples", dtype= str).set_index(["fastq-file-name"], drop=False)
+units.index.names = ['sample']
+units.index = units.index.str.replace('.fq', '')
+units.index = units.index.str.replace('.gz', '')
+units.index = units.index.str.replace('.fastq', '')
 
 # create lists containing the sample names and conditions
 SAMPLES = units.index.get_level_values('sample').unique().tolist()
-samples = pd.read_csv(config["units"], dtype=str,index_col=0,sep="\t")
-samplefile = config["units"]
+samples = units.drop(units.columns[0], axis=1)
+
+# ----------------------------
+
+        # # read the tabulated separated table containing the sample, condition and fastq file information∂DE
+        # units = pd.read_table(config["units"], dtype=str).set_index(["sample"], drop=False)
+
+        # # create lists containing the sample names and conditions
+        # SAMPLES = units.index.get_level_values('sample').unique().tolist()
+        # samples = pd.read_csv(config["units"], dtype=str,index_col=0,sep="\t")
 
 ###########################
 # Input functions for rules
@@ -306,13 +320,33 @@ rule create_counts_table:
 #########################################
 rule multiqc:
     input:
-        expand(RESULT_DIR + "fastqc/{sample}_R1_fastqc.html", sample=SAMPLES),
+#        expand(RESULT_DIR + "fastqc/{sample}_R1_fastqc.html", sample=SAMPLES),
         expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample=SAMPLES),
         RESULT_DIR + "counts.txt"
     output:
-        RESULT_DIR + "multiqc/multiqc_report.html"
+        RESULT_DIR + "multiqc/multiqc_report.html"hi
     params:
         data_dir = [WORKING_DIR, RESULT_DIR],
         res_dir = RESULT_DIR + "multiqc/"
     shell:
         "multiqc {params.data_dir} -o {params.res_dir}"
+
+#########################################
+# Gene enrichment
+#########################################
+rule enrichment:
+    input:
+        count = RESULT_DIR + "counts.txt",
+        metadata = config["units"]
+    params:
+        output_dir = RESULT_DIR + "visualization/",
+        heatmap_pval = config["clustering_parmas"]["heatmap"]["pval"],
+        heatmapTopGenes = config["clustering_parmas"]["heatmap"]["top_genes"],
+        heatmapColor = config["clustering_parmas"]["heatmap"]["color"],
+        gsea_pval = config["gsea_params"]["pval_cutoff"],
+        gsea_fdr = config["gsea_paraps"]["fdr_cutoff"]
+    shell:"""
+    Rscripts scripts/clusteringNenrichment_cnt.r  --count {input.count} --metadata {input.metadata} --outdir {parmas.output_dir} \
+    --hpval {parmas.heatmap_pval} --ntopgene {parmas.heatmapTopGenes} --hmapcolor {parmas.heatmapColor} \
+    --gseafdr {params.gsea_fdr} --gseapval {params.gsea_pval} \
+    """

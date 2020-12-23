@@ -1,13 +1,23 @@
 ---
-threads: 60
-organism: homo_sapiens
-indexed: true
-aligner: star # HISAT2 or STAR
-refs:
-  hg_release_ver: 100
-  mm_release_ver: 
+threads: 60 # # of thread
+organism: homo_sapiens # human or mouse
+need_indexed: need # need or not
+aligner: hisat2 # HISAT2 or STAR
+ref:
+  hg_release_ver: "101"
+  mm_release_ver: "100"
+clustering_parmas:
+  heatmap:
+    pval: 0.05
+    top_genes: 30
+    color: "YlOrBr"
+  volcano:
+gsea_params:
+  pval_cutoff: 0.01
+  fdr_cutoff: 0.25
+
 result_dir: results/
-units: data/samples.tsv
+units: data/sample-list.xlsx
 working_dir: temp/
 
 deseq2:
