@@ -34,6 +34,7 @@ library(ggrepel)
 library(EnhancedVolcano)
 library(readxl)
 library(data.table)
+library(grid)
 
 # arguments to provide
 option_list = list(
@@ -94,8 +95,7 @@ samples$samples = gsub(".fastq", "", samples$samples)
 rownames(samples) = samples$samples
 
 for(i in 1:nrow(comp)){
-  ifelse(!dir.exists(paste0("results/", comp[i, ])), dir.create(paste0("results/",comp[i, ]), showWarnings = FALSE, recursive = T), print("pass"))
-  # dir.create(paste0("results/",comp[i, ]), showWarnings = FALSE)
+  ifelse(!dir.exists(paste0(opt$outdir, comp[i, ])), dir.create(paste0(opt$outdir, comp[i, ]), showWarnings = FALSE, recursive = T), print("pass"))
 }
 
 for(i in 1:nrow(comp)){
@@ -309,8 +309,8 @@ for(i in 1:nrow(comp)){
   
   ranks <- deframe(res2)
   
-  pathways.gobp <- gmtPathways("MSigDB_v7.2/c5.go.bp.v7.2.symbols.gmt")
-  pathways.reactome <- gmtPathways("MSigDB_v7.2/c2.cp.reactome.v7.2.symbols.gmt")
+  pathways.gobp <- gmtPathways("scripts/MSigDB_v7.2/c5.go.bp.v7.2.symbols.gmt")
+  pathways.reactome <- gmtPathways("scripts/MSigDB_v7.2/c2.cp.reactome.v7.2.symbols.gmt")
   
   fgseaRes.gobp <- fgsea(pathways=pathways.gobp, stats=ranks, min = 15, max = 500)
   fgseaRes.reactome <- fgsea(pathways=pathways.reactome, stats=ranks, min = 15, max = 500)
