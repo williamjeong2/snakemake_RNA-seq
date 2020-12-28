@@ -21,7 +21,7 @@ THREADS = config["threads"]
 
 # Edited
 # read the tabulated separated table containing the sample, condition and fastq file information∂DE
-units = pd.read_excel(config["units"], sheet_name = "samples", dtype= str).set_index(["fastq-file-name"], drop=False)
+units = pd.read_excel(config["units"], sheet_name = "samples", dtype = str, engine = 'openpyxl').set_index(["fastq-file-name"], drop=False)
 units.index.names = ['sample']
 units.index = units.index.str.replace('.fq', '')
 units.index = units.index.str.replace('.gz', '')
@@ -166,7 +166,7 @@ if config["need_indexed"].upper().find("NEED") >= 0:
 if config["aligner"].upper().find("HISAT2") >= 0:
     if config["organism"].upper().find("HOMO") >= 0 or config["organism"].upper().find("HUMAN") >= 0:
         ref_ver = config["ref"]["hg_release_ver"]
-    elif config["organism"].upper().find("MUS") >= or config["organism"].upper().find("MOUSE") >= 0:
+    elif config["organism"].upper().find("MUS") >= 0 or config["organism"].upper().find("MOUSE") >= 0:
         ref_ver = config["ref"]["mm_release_ver"]
 
     if config["need_indexed"].upper().find("NEED") >= 0:
@@ -184,11 +184,11 @@ if config["aligner"].upper().find("HISAT2") >= 0:
             threads: THREADS
             run:
                 if config["organism"].upper().find("HOMO") >= 0 or config["organism"].upper().find("HUMAN") >= 0:
-                    shell("cp scripts/make_grch38_tran.sh {params[1]} && \
-                    (cd {params[1]} && sh make_grch38_tran.sh {params[2]})")
-                elif config["organism"].upper().find("MUS") >= or config["organism"].upper().find("MOUSE") >= 0:
-                    shell("cp scripts/make_grcm38_tran.sh {params[1]} && \
-                    (cd {params[1]} && sh make_grcm38_tran.sh {params[2]})")
+                    shell("cp scripts/make_grch38_tran.sh {params[0]} && \
+                    (cd {params[0]} && sh make_grch38_tran.sh {params[1]})")
+                elif config["organism"].upper().find("MUS") >= 0 or config["organism"].upper().find("MOUSE") >= 0:
+                    shell("cp scripts/make_grcm38_tran.sh {params[0]} && \
+                    (cd {params[0]} && sh make_grcm38_tran.sh {params[1]})")
 
     rule hisat_mapping:
         input:
@@ -285,19 +285,22 @@ rule stringtie:
 
 rule create_PKM_table:
     input:
-        expand(WORKING_DIR + "stringtie/{sample}/transcript.gtf", sample = SAMPLES)
+        WORKING_DIR
+#        expand(WORKING_DIR + "stringtie/{sample}/transcript.gtf", sample = SAMPLES)
     output:
         r1 = RESULT_DIR + "gene_FPKM.csv",
         r2 = RESULT_DIR + "transcript_FPKM.csv"
     params:
         dataset = config["merge_PKM"]["organism"],
-        outdir = directory(RESULT_DIR)
+        outdir = directory(RESULT_DIR),
+        trans_anno = "scripts/bmIDs_hg.tsv",
+        gene_anno = "scripts/bmIDs_g_hg.tsv"
     message:
         "create gene and transcript FPKM(if single-end reads, RPKM)."
     conda:
         "envs/merge_fpkm.yaml"
     shell:
-        "Rscript scripts/merge_RFPKM.r -i {input} -o {params.outdir} -d {params.dataset}"
+        "Rscript scripts/merge_RFPKM.r --indir temp/ --outdir {params.outdir} --dataset {params.dataset} --trans {params.trans_anno} --gene {params.gene_anno}"
 
 #########################################
 # Get table containing the raw counts
@@ -324,7 +327,7 @@ rule multiqc:
         expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample=SAMPLES),
         RESULT_DIR + "counts.txt"
     output:
-        RESULT_DIR + "multiqc/multiqc_report.html"hi
+        RESULT_DIR + "multiqc/multiqc_report.html"
     params:
         data_dir = [WORKING_DIR, RESULT_DIR],
         res_dir = RESULT_DIR + "multiqc/"
@@ -336,7 +339,7 @@ rule multiqc:
 #########################################
 rule enrichment:
     input:
-        count = RESULT_DIR + "counts.txt",
+        countFile = RESULT_DIR + "counts.txt",
         metadata = config["units"]
     params:
         output_dir = RESULT_DIR + "visualization/",
@@ -344,9 +347,9 @@ rule enrichment:
         heatmapTopGenes = config["clustering_parmas"]["heatmap"]["top_genes"],
         heatmapColor = config["clustering_parmas"]["heatmap"]["color"],
         gsea_pval = config["gsea_params"]["pval_cutoff"],
-        gsea_fdr = config["gsea_paraps"]["fdr_cutoff"]
+        gsea_fdr = config["gsea_params"]["fdr_cutoff"]
     shell:"""
-    Rscripts scripts/clusteringNenrichment_cnt.r  --count {input.count} --metadata {input.metadata} --outdir {parmas.output_dir} \
-    --hpval {parmas.heatmap_pval} --ntopgene {parmas.heatmapTopGenes} --hmapcolor {parmas.heatmapColor} \
-    --gseafdr {params.gsea_fdr} --gseapval {params.gsea_pval} \
+    Rscript scripts/clusteringNenrichment_cnt.r --count {input.countFile} --metadata {input.metadata} --outdir {params.output_dir} \
+    --fdrval {params.heatmap_pval} --ntopgene {params.heatmapTopGenes} --hmapcolor {params.heatmapColor} \
+    --gseafdr {params.gsea_fdr} --gseapval {params.gsea_pval}
     """
