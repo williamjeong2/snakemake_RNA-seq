@@ -196,10 +196,7 @@ if config["aligner"].upper().find("HISAT2") >= 0:
             indexFiles = [WORKING_DIR + "genome/genome." + str(i) + ".ht2" for i in range(1,9)]
         output:
             bams = WORKING_DIR + "mapped/{sample}.sorted.bam",
-            sum  = RESULT_DIR + "logs/{sample}_sum.txt",
-            met  = RESULT_DIR + "logs/{sample}_met.txt"
-        log:
-            RESULT_DIR + "logs/hisat2/{sample}.log.txt"
+            log  = RESULT_DIR + "logs/hisat2/{sample}_log.txt"
         params:
             indexName = WORKING_DIR + "genome/genome",
             sampleName = "{sample}"
@@ -208,13 +205,13 @@ if config["aligner"].upper().find("HISAT2") >= 0:
         threads: THREADS
         run:
             if sample_is_single_end(params.sampleName):
-                shell("hisat2 -p {threads} --summary-file {output.sum} --met-file {output.met} -q -x {params.indexName} \
+                shell("hisat2 -p {threads} --summary-file {output.log} -q -x {params.indexName} \
                 -U {input[0]} | samtools view -@ {threads} -Sb -F 4 | samtools sort -@ {threads} -o {output.bams}; \
-                samtools index {output.bams} 2> {log}")
+                samtools index {output.bams}")
             else:
-                shell("hisat2 -p {threads} --summary-file {output.sum} --met-file {output.met} -q -x {params.indexName} \
+                shell("hisat2 -p {threads} --summary-file {output.log} -q -x {params.indexName} \
                 -1 {input[0]} -2 {input[1]} | samtools view -@ {threads} -Sb -F 4 | samtools sort -@ {threads} -o {output.bams}; \
-                samtools index {output.bams} 2> {log}")
+                samtools index {output.bams}")
 
 elif config["aligner"].upper().find("STAR") >= 0:
     if config["need_indexed"].upper().find("NEED") >= 0:
@@ -273,8 +270,6 @@ rule stringtie:
         r1 = WORKING_DIR + "stringtie/{sample}/transcript.gtf",
         r2 = WORKING_DIR + "stringtie/{sample}/gene_abundances.tsv",
         r3 = WORKING_DIR + "stringtie/{sample}/cov_ref.gtf"
-    log:
-        RESULT_DIR + "logs/stringtie/{sample}.log.txt"
     message:
         "assemble RNA-Seq alignments into potential transcripts."
     threads: THREADS
