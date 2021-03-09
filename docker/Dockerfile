@@ -86,4 +86,6 @@ RUN echo "conda activate rnaseq" >> /root/.bashrc
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 CMD /bin/bash -c "source /root/.bashrc"
 
+CMD chmod -R 777 /home/snakemake_RNA-seq/
+
 WORKDIR /home/snakemake_RNA-seq
