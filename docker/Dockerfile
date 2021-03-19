@@ -54,8 +54,8 @@ RUN echo "conda activate rnaseq" >> /root/.bashrc
 
 # Make RUN commands use the new environment
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
-CMD /bin/bash -c "source /root/.bashrc"
-
-CMD chmod -R 777 /home/snakemake_RNA-seq/
+RUN chmod -R 777 /home/snakemake_RNA-seq/
+RUN /bin/bash -c "source /root/.bashrc"
 
 WORKDIR /home/snakemake_RNA-seq
+ENTRYPOINT [ "/bin/bash", "snakemake -r --use-conda" ]
