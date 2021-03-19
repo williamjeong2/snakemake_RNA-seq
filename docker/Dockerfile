@@ -28,36 +28,6 @@ RUN apt-get update -y && \
     TERM=xterm && \
     apt-get update
 
-RUN Rscript -e 'install.packages("optparse", repos="http://cran.rstudio.com/", dependencies=TRUE)'
-RUN Rscript -e 'install.packages("data.table", repos="http://cran.rstudio.com/", dependencies=TRUE)'
-RUN Rscript -e 'install.packages("tidyr", repos="http://cran.rstudio.com/", dependencies=TRUE)'
-RUN Rscript -e 'install.packages("dplyr", repos="http://cran.rstudio.com/", dependencies=TRUE)'
-RUN Rscript -e 'install.packages("BiocManager", repos="http://cran.rstudio.com/", dependencies=TRUE);'
-RUN Rscript -e 'BiocManager::install(version = "3.12");'
-RUN Rscript -e 'BiocManager::install("DESeq2")'
-RUN Rscript -e 'BiocManager::install("ggplot2")'
-RUN Rscript -e 'BiocManager::install("clusterProfiler")'
-RUN Rscript -e 'BiocManager::install("DOSE")'
-RUN Rscript -e 'BiocManager::install("KEGG.db")'
-RUN Rscript -e 'BiocManager::install("org.Mm.eg.db")'
-RUN Rscript -e 'BiocManager::install("org.Hs.eg.db")'
-RUN Rscript -e 'BiocManager::install("pheatmap")'
-RUN Rscript -e 'BiocManager::install("genefilter")'
-RUN Rscript -e 'BiocManager::install("RColorBrewer")'
-RUN Rscript -e 'BiocManager::install("GO.db")'
-RUN Rscript -e 'BiocManager::install("topGO")'
-RUN Rscript -e 'BiocManager::install("gage")'
-RUN Rscript -e 'BiocManager::install("ggsci")'
-RUN Rscript -e 'BiocManager::install("curl")'
-RUN Rscript -e 'BiocManager::install("biomaRt")'
-RUN Rscript -e 'BiocManager::install("EnhancedVolcano")'
-RUN Rscript -e 'BiocManager::install("fgsea")'
-RUN Rscript -e 'BiocManager::install("DEGreport")'
-
-# error occured
-# RUN Rscript -e 'BiocManager::install("reactome.db");'
-# RUN Rscript -e 'BiocManager::install("ReactomePA"); library(ReactomePA);'
-
 # install miniconda to /miniconda
 RUN curl -LO http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN bash Miniconda3-latest-Linux-x86_64.sh -p /miniconda -b
