@@ -12,29 +12,8 @@ if(length(not.installed.bio.packages)){
     install.packages("BiocManager")
   BiocManager::install(not.installed.bio.packages, suppressUpdates = TRUE)
 }
-library(optparse)
-library(tidyverse)
-library(DESeq2);
-library(ggplot2);
-library(DEGreport);
-library(clusterProfiler);
-library(DOSE);
-library(org.Hs.eg.db);
-library(pheatmap);
-library(genefilter);
-library(RColorBrewer);
-library(GO.db);
-library(topGO);
-library(gage);
-library(ggsci);
-library(curl);
-library(biomaRt)
-library(fgsea)
-library(ggrepel)
-library(EnhancedVolcano)
-library(readxl)
-library(data.table)
-library(grid)
+lapply(list.of.bio.packages, require, character.only = TRUE)
+lapply(list.of.packages, require, character.only = TRUE)
 
 # arguments to provide
 option_list = list(
@@ -282,7 +261,7 @@ for(i in 1:nrow(comp)){
   ggsave(filename = paste0(opt$outdir, comp[i, ], "/volcano.png"), 
          plot = volcano.plot, 
          device = "png", scale = 2,
-         width = 7, height = 4,units =  "in",
+         width = 7, height = 7,units =  "in",
          dpi = 320)
   
   
