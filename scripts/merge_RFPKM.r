@@ -1,23 +1,16 @@
 #!/usr/bin/env Rscript
-if (!requireNamespace("data.table", quietly = TRUE))
-  install.packages("data.table",repos = "http://cran.us.r-project.org")
-library(data.table)
-if (!requireNamespace("tidyr", quietly = TRUE))
-  install.packages("tidyr",repos = "http://cran.us.r-project.org")
-library(tidyr)
-if (!requireNamespace("dplyr", quietly = TRUE))
-  install.packages("dplyr",repos = "http://cran.us.r-project.org")
-library(dplyr)
+list.of.packages <- c("data.table", "tidyr", "dplyr", "optparse")
+list.of.bio.packages <- c("")
+not.installed.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
+if(length(not.installed.packages)) install.packages(not.installed.packages, repos="http://cran.rstudio.com/", dependencies=TRUE)
 
-if (!requireNamespace("BiocManager", quietly = TRUE))
-  install.packages("BiocManager",repos = "http://cran.us.r-project.org")
-# update.packages(ask = FALSE,repos = "http://cran.us.r-project.org")
-#BiocManager::install(version = "3.11")
-if (!requireNamespace("biomaRt", quietly = TRUE))
-  BiocManager::install("biomaRt")
-# BiocManager::install("digest")
-library(biomaRt)
-library(optparse)
+if(length(not.installed.bio.packages)){
+  if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+  BiocManager::install(not.installed.bio.packages, suppressUpdates = TRUE)
+}
+lapply(list.of.bio.packages, require, character.only = T
+lapply(list.of.packages, require, character.only = TRUE)
 
 option_list = list(
     make_option(c("-d", "--dataset"), type="character", default="hsapiens_gene_ensembl", metavar="character"),
@@ -48,13 +41,9 @@ wdir <- getwd()
 
 src_files <- list.files(getwd(), pattern = "transcript.gtf", recursive = T, include.dirs = T)
 src_files_cnt <- length(src_files)
-#src_files <- src_files[1:src_files_cnt]
-#src_files_cnt <- length(src_files)
 
 for(i in 1:src_files_cnt){
   print(paste0("working ", i, " in ", src_files_cnt))
-  # wdir <- paste0(src_dir, src_files[i])
-  # setwd(paste0(wdir, src_files[i]))
   print(src_files[i])
   transcript <- fread(src_files[i], sep = "\t", header = F, stringsAsFactors = T)
 
