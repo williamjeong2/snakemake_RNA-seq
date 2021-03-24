@@ -16,7 +16,6 @@ configfile: "data/config.yaml" # where to find parameters
 WORKING_DIR = config["working_dir"]
 RESULT_DIR = config["result_dir"]
 THREADS = config["threads"]
-
 ########################
 
 # Edited
@@ -26,6 +25,7 @@ units.index.names = ['sample']
 units.index = units.index.str.replace('.fq', '')
 units.index = units.index.str.replace('.gz', '')
 units.index = units.index.str.replace('.fastq', '')
+units.dropna(inplace = True)
 
 # create lists containing the sample names and conditions
 SAMPLES = units.index.get_level_values('sample').unique().tolist()
@@ -136,31 +136,31 @@ rule fastp:
 #########################
 # RNA-Seq read alignement
 #########################
-if config["need_indexed"].upper().find("NEED") >= 0:
-    if config["organism"].upper().find("HOMO") >= 0 or config["organism"].upper().find("HUMAN") >= 0:
-        rule ref_download_hg:
-            output:
-                fasta = WORKING_DIR + "genome/genome.fa",
-                gtf = WORKING_DIR + "genome/genome.gtf"
-            params:
-                version = config["ref"]["hg_release_ver"], # release version, It must be string
-                outdir = WORKING_DIR + "genome/"
-            shell:"""
-            mkdir -p {params.outdir} && \
-            wget ftp://ftp.ensembl.org/pub/release-{params.version}/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz -O genome.fa.gz && gunzip -c genome.fa.gz > {output.fasta} && \
-            wget ftp://ftp.ensembl.org/pub/release-{params.version}/gtf/homo_sapiens/Homo_sapiens.GRCh38.{params.version}.gtf.gz -O genome.gtf.gz && gunzip -c genome.gtf.gz > {output.gtf}"""
-    elif config["organism"].upper().find("MUS") >= 0 or config["organism"].upper().find("MOUSE") >= 0:
-        rule ref_download_mm:
-            output:
-                fasta = WORKING_DIR + "genome/genome.fa",
-                gtf = WORKING_DIR + "genome/genome.gtf"
-            params:
-                version = config["ref"]["mm_release_ver"], # release version, It must be string
-                outdir = WORKING_DIR + "genome/"
-            shell:"""
-            mkdir -p {params.outdir} && \
-            wget ftp://ftp.ensembl.org/pub/release-{params.version}/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna.primary_assembly.fa.gz -O genome.fa.gz && tar -zxvf genome.fa.gz -C {params.outdir} && \
-            wget ftp://ftp.ensembl.org/pub/release-{params.version}/gtf/mus_musculus/Mus_musculus.GRCm38.{params.version}.gtf.gz -O genome.gtf.gz && tar -zxvf genome.gtf.gz -C {params.outdir}"""
+# if config["need_indexed"].upper().find("NEED") >= 0:
+#     if config["organism"].upper().find("HOMO") >= 0 or config["organism"].upper().find("HUMAN") >= 0:
+#         rule ref_download_hg:
+#             output:
+#                 fasta = WORKING_DIR + "genome/genome.fa",
+#                 gtf = WORKING_DIR + "genome/genome.gtf"
+#             params:
+#                 version = config["ref"]["hg_release_ver"], # release version, It must be string
+#                 outdir = WORKING_DIR + "genome/"
+#             shell:"""
+#             mkdir -p {params.outdir} && \
+#             wget ftp://ftp.ensembl.org/pub/release-{params.version}/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz -O genome.fa.gz && gunzip -c genome.fa.gz > {output.fasta} && \
+#             wget ftp://ftp.ensembl.org/pub/release-{params.version}/gtf/homo_sapiens/Homo_sapiens.GRCh38.{params.version}.gtf.gz -O genome.gtf.gz && gunzip -c genome.gtf.gz > {output.gtf}"""
+#     elif config["organism"].upper().find("MUS") >= 0 or config["organism"].upper().find("MOUSE") >= 0:
+#         rule ref_download_mm:
+#             output:
+#                 fasta = WORKING_DIR + "genome/genome.fa",
+#                 gtf = WORKING_DIR + "genome/genome.gtf"
+#             params:
+#                 version = config["ref"]["mm_release_ver"], # release version, It must be string
+#                 outdir = WORKING_DIR + "genome/"
+#             shell:"""
+#             mkdir -p {params.outdir} && \
+#             wget ftp://ftp.ensembl.org/pub/release-{params.version}/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna.primary_assembly.fa.gz -O genome.fa.gz && tar -zxvf genome.fa.gz -C {params.outdir} && \
+#             wget ftp://ftp.ensembl.org/pub/release-{params.version}/gtf/mus_musculus/Mus_musculus.GRCm38.{params.version}.gtf.gz -O genome.gtf.gz && tar -zxvf genome.gtf.gz -C {params.outdir}"""
 
 
 if config["aligner"].upper().find("HISAT2") >= 0:
@@ -171,9 +171,9 @@ if config["aligner"].upper().find("HISAT2") >= 0:
 
     if config["need_indexed"].upper().find("NEED") >= 0:
         rule hisat_index:
-            input:
-                fasta = WORKING_DIR + "genome/genome.fa",
-                gtf = WORKING_DIR + "genome/genome.gtf"
+            # input:
+                # fasta = WORKING_DIR + "genome/genome.fa",
+                # gtf = WORKING_DIR + "genome/genome.gtf"
             output:
                 [WORKING_DIR + "genome/genome." + str(i) + ".ht2" for i in range(1,9)]
             message:
@@ -184,11 +184,9 @@ if config["aligner"].upper().find("HISAT2") >= 0:
             threads: THREADS
             run:
                 if config["organism"].upper().find("HOMO") >= 0 or config["organism"].upper().find("HUMAN") >= 0:
-                    shell("cp scripts/make_grch38_tran.sh {params[0]} && \
-                    (cd {params[0]} && sh make_grch38_tran.sh {params[1]})")
+                    shell("cp scripts/make_grch38_tran.sh {params[0]} && sh temp/genome/make_grch38_tran.sh {params[1]} {threads}")
                 elif config["organism"].upper().find("MUS") >= 0 or config["organism"].upper().find("MOUSE") >= 0:
-                    shell("cp scripts/make_grcm38_tran.sh {params[0]} && \
-                    (cd {params[0]} && sh make_grcm38_tran.sh {params[1]})")
+                    shell("cp scripts/make_grcm38_tran.sh {params[0]} && sh temp/genome/make_grcm38_tran.sh {params[1]} {threads}")
 
     rule hisat_mapping:
         input:

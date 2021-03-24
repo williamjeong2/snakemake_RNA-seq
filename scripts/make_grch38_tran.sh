@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# Downloads sequence for the GRCh38 release 96 version of H. sapiens (human) from
+# Downloads sequence for the GRCh38 of H. sapiens (human) from
 # Ensembl.
 #
 # Note that Ensembl's GRCh38 build has three categories of compressed fasta
@@ -16,6 +16,7 @@
 #
 
 ENSEMBL_RELEASE=$1
+THREADS=$2
 ENSEMBL_GRCh38_BASE=ftp://ftp.ensembl.org/pub/release-${ENSEMBL_RELEASE}/fasta/homo_sapiens/dna
 ENSEMBL_GRCh38_GTF_BASE=ftp://ftp.ensembl.org/pub/release-${ENSEMBL_RELEASE}/gtf/homo_sapiens
 GTF_FILE=Homo_sapiens.GRCh38.${ENSEMBL_RELEASE}.gtf
@@ -80,7 +81,7 @@ if [ ! -f $GTF_FILE ] ; then
        ${HISAT2_EXON_SCRIPT} ${GTF_FILE} > genome.exon
 fi
 
-CMD="${HISAT2_BUILD_EXE} -p 60 genome.fa --ss genome.ss --exon genome.exon genome"
+CMD="${HISAT2_BUILD_EXE} -p ${THREADS} genome.fa --ss genome.ss --exon genome.exon genome"
 echo Running $CMD
 if $CMD ; then
 	echo "genome index built; you may remove fasta files"

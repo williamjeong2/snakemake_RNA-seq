@@ -1,10 +1,10 @@
 #!/bin/sh
 
 #
-# Downloads sequence for the GRCh38 release 96 version of H. sapiens (human) from
+# Downloads sequence for the GRCm38 of H. sapiens (human) from
 # Ensembl.
 #
-# Note that Ensembl's GRCh38 build has three categories of compressed fasta
+# Note that Ensembl's GRCm38 build has three categories of compressed fasta
 # files:
 #
 # The base files, named ??.fa.gz
@@ -16,8 +16,9 @@
 #
 
 ENSEMBL_RELEASE=$1
-ENSEMBL_GRCh38_BASE=ftp://ftp.ensembl.org/pub/release-${ENSEMBL_RELEASE}/fasta/mus_musculus/dna/
-ENSEMBL_GRCh38_GTF_BASE=ftp://ftp.ensembl.org/pub/release-${ENSEMBL_RELEASE}/gtf/mus_musculus
+THREADS=$2
+ENSEMBL_GRCm38_BASE=ftp://ftp.ensembl.org/pub/release-${ENSEMBL_RELEASE}/fasta/mus_musculus/dna/
+ENSEMBL_GRCm38_GTF_BASE=ftp://ftp.ensembl.org/pub/release-${ENSEMBL_RELEASE}/gtf/mus_musculus
 GTF_FILE=Mus_musculus.GRCm38.${ENSEMBL_RELEASE}.gtf
 
 get() {
@@ -66,21 +67,21 @@ if [ ! -x "$HISAT2_EXON_SCRIPT" ] ; then
 fi
 
 rm -f genome.fa
-F=Homo_sapiens.GRCh38.dna.primary_assembly.fa
+F=Mus_musculus.GRCm38.dna.primary_assembly.fa
 if [ ! -f $F ] ; then
-	get ${ENSEMBL_GRCh38_BASE}/$F.gz || (echo "Error getting $F" && exit 1)
+	get ${ENSEMBL_GRCm38_BASE}/$F.gz || (echo "Error getting $F" && exit 1)
 	gunzip $F.gz || (echo "Error unzipping $F" && exit 1)
 	mv $F genome.fa
 fi
 
 if [ ! -f $GTF_FILE ] ; then
-       get ${ENSEMBL_GRCh38_GTF_BASE}/${GTF_FILE}.gz || (echo "Error getting ${GTF_FILE}" && exit 1)
+       get ${ENSEMBL_GRCm38_GTF_BASE}/${GTF_FILE}.gz || (echo "Error getting ${GTF_FILE}" && exit 1)
        gunzip ${GTF_FILE}.gz || (echo "Error unzipping ${GTF_FILE}" && exit 1)
        ${HISAT2_SS_SCRIPT} ${GTF_FILE} > genome.ss
        ${HISAT2_EXON_SCRIPT} ${GTF_FILE} > genome.exon
 fi
 
-CMD="${HISAT2_BUILD_EXE} -p 60 genome.fa --ss genome.ss --exon genome.exon genome"
+CMD="${HISAT2_BUILD_EXE} -p ${THREADS} genome.fa --ss genome.ss --exon genome.exon genome"
 echo Running $CMD
 if $CMD ; then
 	echo "genome index built; you may remove fasta files"
