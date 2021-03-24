@@ -58,4 +58,3 @@ RUN chmod -R 777 /home/snakemake_RNA-seq/
 RUN /bin/bash -c "source /root/.bashrc"
 
 WORKDIR /home/snakemake_RNA-seq
-ENTRYPOINT [ "/bin/bash", "snakemake -r --use-conda" ]
