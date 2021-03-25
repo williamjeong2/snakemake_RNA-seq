@@ -28,6 +28,31 @@ RUN apt-get update -y && \
     TERM=xterm && \
     apt-get update
 
+RUN Rscript -e 'install.packages("optparse", repos="http://cran.rstudio.com/", dependencies=TRUE)'
+RUN Rscript -e 'install.packages("data.table", repos="http://cran.rstudio.com/", dependencies=TRUE)'
+RUN Rscript -e 'install.packages("tidyr", repos="http://cran.rstudio.com/", dependencies=TRUE)'
+RUN Rscript -e 'install.packages("dplyr", repos="http://cran.rstudio.com/", dependencies=TRUE)'
+RUN Rscript -e 'install.packages("BiocManager", repos="http://cran.rstudio.com/", dependencies=TRUE)'
+RUN Rscript -e 'BiocManager::install("DESeq2", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("ggplot2", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("clusterProfiler", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("DOSE", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("KEGG.db", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("org.Mm.eg.db", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("org.Hs.eg.db", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("pheatmap", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("genefilter", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("RColorBrewer", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("GO.db", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("topGO", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("gage", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("ggsci", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("curl", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("biomaRt", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("EnhancedVolcano", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("fgsea", suppressUpdates = TRUE)'
+RUN Rscript -e 'BiocManager::install("DEGreport", suppressUpdates = TRUE)'
+
 # install miniconda to /miniconda
 RUN curl -LO http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN bash Miniconda3-latest-Linux-x86_64.sh -p /miniconda -b

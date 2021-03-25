@@ -1,5 +1,5 @@
 list.of.packages <- c("tidyverse", "optparse", "readxl", "data.table")
-list.of.bio.packages <- c("DESeq2", "DEGreport", "ggplot2", "clusterProfiler", "DOSE", "org.Hs.eg.db", "pheatmap",
+list.of.bio.packages <- c("DESeq2", "DEGreport", "ggplot2", "clusterProfiler", "DOSE", "org.Hs.eg.db", "pheatmap", "org.Mm.eg.db"
                           "genefilter", "RColorBrewer", "GO.db", "topGO", "gage", "ggsci", "curl", "biomaRt", "fgsea", "EnhancedVolcano")
 
 # Install Require packages
