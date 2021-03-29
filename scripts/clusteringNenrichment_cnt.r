@@ -1,16 +1,16 @@
 list.of.packages <- c("tidyverse", "optparse", "readxl", "data.table")
-list.of.bio.packages <- c("DESeq2", "DEGreport", "ggplot2", "clusterProfiler", "DOSE", "org.Hs.eg.db", "pheatmap", "org.Mm.eg.db"
+list.of.bio.packages <- c("DESeq2", "DEGreport", "ggplot2", "clusterProfiler", "DOSE", "org.Hs.eg.db", "pheatmap", "org.Mm.eg.db",
                           "genefilter", "RColorBrewer", "GO.db", "topGO", "gage", "ggsci", "curl", "biomaRt", "fgsea", "EnhancedVolcano")
 
 # Install Require packages
 not.installed.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
-if(length(not.installed.packages)) install.packages(not.installed.packages, repos="http://cran.rstudio.com/", dependencies=TRUE)
+if(length(not.installed.packages)) install.packages(not.installed.packages, repos="http://cran.rstudio.com/", dependencies=TRUE, Ncpus = 6)
 
 not.installed.bio.packages <- list.of.bio.packages[!(list.of.bio.packages %in% installed.packages()[, "Package"])]
 if(length(not.installed.bio.packages)){
   if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-  BiocManager::install(not.installed.bio.packages, suppressUpdates = TRUE)
+  BiocManager::install(not.installed.bio.packages, update = TRUE, Ncpus = 6, suppressUpdates = TRUE)
 }
 lapply(list.of.bio.packages, require, character.only = TRUE)
 lapply(list.of.packages, require, character.only = TRUE)
@@ -49,7 +49,7 @@ detectGroups <- function (x){  # x are col names
 ####################
 
 # Import counts table
-countdata <- read.table(opt$count, header = TRUE, row.names = 1)
+countdata <- read.table(opt$count, header = TRUE, skip = 1, row.names = 1)
 
 # Remove .bam from column identifiers
 colnames(countdata) <- gsub(".sorted.bam", "", colnames(countdata), fixed = T)
@@ -74,7 +74,7 @@ samples$samples = gsub(".fastq", "", samples$samples)
 rownames(samples) = samples$samples
 
 for(i in 1:nrow(comp)){
-  ifelse(!dir.exists(paste0(opt$outdir, comp[i, ])), dir.create(paste0(opt$outdir, comp[i, ]), showWarnings = FALSE, recursive = T), print("pass"))
+  ifelse(!dir.exists(paste0(opt$outdir, comp[i, ])), dir.create(paste0(opt$outdir, comp[i, ]), showWarnings = FALSE, recursive = T), print("Directory already created"))
 }
 
 for(i in 1:nrow(comp)){
@@ -88,10 +88,11 @@ for(i in 1:nrow(comp)){
   rm(comp1_tb, comp2_tb)
   
   metadata = samples[colnames(comp_tb), ]
-  rownames(metadata) = metadata$samples
   metadata = unite(metadata, condition, c(cell_type, treatment), remove = T)
-  colnames(metadata)
-  
+  column_to_rownames(metadata, var = "samples")
+  metadata$condition <- factor(metadata$condition)
+  metadata <- metadata[,"condition"]
+
   # make DESeq2 object from counts and metadata
   # - countData : count dataframe
   # - colData : sample metadata in the dataframe with row names as sampleID's
@@ -149,7 +150,7 @@ for(i in 1:nrow(comp)){
   results <- results(ddsMat, pAdjustMethod = "fdr", alpha = opt$fdrval)
   
   # Add ENSEMBL
-  results$ensembl <- mapIds(x = org.Hs.eg.db,
+  results$ensembl <- mapIds(x = org.Mm.eg.db,
                             keys = row.names(results),
                             column = "SYMBOL",
                             keytype = "ENSEMBL",
@@ -166,18 +167,26 @@ for(i in 1:nrow(comp)){
          sep = '\t', row.names = F)
   
   # Gather 30 significant genes and make matrix
-  mat <- assay(rld[row.names(results_sig)])[1:opt$ntopgene, ]
-  mat_t <- select(org.Hs.eg.db, keys=row.names(mat), columns = c("SYMBOL", "ENSEMBL"), keytype = "ENSEMBL")
+  if (nrow(assay(rld[row.names(results_sig)])) < opt$ntopgene ){
+    # mat <- assay(rld[row.names(results_sig)])[1:nrow(assay(rld[row.names(results_sig)])), ]
+    mat <- assay(rld[row.names(results_sig)])
+  }else {
+    mat <- assay(rld[row.names(results_sig)])[1:opt$ntopgene, ]
+  }
+
+  mat_t <- biomaRt::select(org.Mm.eg.db, keys=row.names(mat), columns = c("SYMBOL", "ENSEMBL"), keytype = "ENSEMBL")
   mat_t$SYMBOL[is.na(mat_t$SYMBOL)] <- mat_t$ENSEMBL[is.na(mat_t$SYMBOL)]
-  row.names(mat) <- mat_t$SYMBOL
-  
+  mat_t = subset(mat_t, !duplicated(subset(mat_t, select=c("ENSEMBL"))))
+  rownames(mat_t) <- mat_t$ENSEMBL
+  rownames(mat) <- mat_t$SYMBOL
+
   # Make Heatmap with pheatmap function
   pdf(NULL)
   heatmap.plot <- pheatmap(mat = mat,
                            color = colorRampPalette(brewer.pal(9, opt$hmapcolor))(255),
                            scale = "row",
                            angle_col = 315,
-                           show_colnames = T, 
+                           show_colnames = TRUE, 
                            fontsize_col = 10, 
                            fontsize_row = 10)
   
@@ -263,7 +272,6 @@ for(i in 1:nrow(comp)){
          device = "png", scale = 2,
          width = 7, height = 7,units =  "in",
          dpi = 320)
-  
   
   ####################
   ## GSEA
