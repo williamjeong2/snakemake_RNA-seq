@@ -311,6 +311,16 @@ rule create_counts_table:
     shell:
         "featureCounts -T {threads} -a {input.gff} -t exon -g gene_id -o {output} {input.bams}"
 
+rule get_rid_of_zero_counts:
+    input:
+        RESULT_DIR + "counts.txt"
+    output:
+        RESULT_DIR + "counts.txt"
+    message:
+        "Delete rows with all zeros"
+    script:
+        "../scripts/postProcess.py"
+
 #########################################
 # Report for all results
 #########################################

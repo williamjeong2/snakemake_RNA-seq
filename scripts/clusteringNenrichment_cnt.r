@@ -49,7 +49,7 @@ detectGroups <- function (x){  # x are col names
 ####################
 
 # Import counts table
-countdata <- read.table(opt$count, header = TRUE, skip = 1, row.names = 1)
+countdata <- read.table(opt$count, header = TRUE, row.names = 1)
 
 # Remove .bam from column identifiers
 colnames(countdata) <- gsub(".sorted.bam", "", colnames(countdata), fixed = T)
