@@ -44,6 +44,16 @@ detectGroups <- function (x){  # x are col names
   return( tem )
 }
 
+savePlot <- function(path, plot, width = 7, height = 7){
+  for(i in c("png", "svg")) {
+    ggsave(filename = paste0(opt$outdir, path, ".", i),
+    plot = plot,
+    device = i, scale = 2,
+    width = width, height = height, units = "in",
+    dpi = 320)
+  }
+}
+
 ####################
 ## Prepare data
 ####################
@@ -58,6 +68,12 @@ colnames(countdata) <- gsub("_REP$", "", colnames(countdata), fixed = T)
 colnames(countdata) <- gsub("_rep$", "", colnames(countdata), fixed = T)
 colnames(countdata) <- gsub("_Rep$", "", colnames(countdata), fixed = T)
 
+if (grepl('^ENSG', row.names(countdata)[1])) {
+  organism <- "org.Hs.eg.db"
+}
+if (grepl('^ENSMUSG', row.names(countdata)[1])) {
+  organism <- "org.Mm.eg.db"
+}
 
 # Remove chr, start, end, strand, length columns
 countdata <- countdata[, c(-1:-5)]
@@ -136,11 +152,7 @@ for(i in 1:nrow(comp)){
     ggtitle("Principal component analysis (PCA)") + 
     coord_fixed(ratio=1.0) + theme(aspect.ratio=1)
   
-  ggsave(filename = paste0(opt$outdir, comp[i, ], "/PCA_by_condition.png"), 
-         plot = pca.group, 
-         device = "png", scale = 2,
-         width = 7, height = 7,units =  "in",
-         dpi = 320)
+  savePlot(paste0(opt$outdir, comp[i, ], "/PCA_by_condition.png"), pca.group)
   
   ####################
   ## Heatmap Plot
@@ -150,7 +162,7 @@ for(i in 1:nrow(comp)){
   results <- results(ddsMat, pAdjustMethod = "fdr", alpha = opt$fdrval)
   
   # Add ENSEMBL
-  results$ensembl <- mapIds(x = org.Mm.eg.db,
+  results$ensembl <- mapIds(x = organism,
                             keys = row.names(results),
                             column = "SYMBOL",
                             keytype = "ENSEMBL",
@@ -174,7 +186,7 @@ for(i in 1:nrow(comp)){
     mat <- assay(rld[row.names(results_sig)])[1:opt$ntopgene, ]
   }
 
-  mat_t <- biomaRt::select(org.Mm.eg.db, keys=row.names(mat), columns = c("SYMBOL", "ENSEMBL"), keytype = "ENSEMBL")
+  mat_t <- biomaRt::select(organism, keys=row.names(mat), columns = c("SYMBOL", "ENSEMBL"), keytype = "ENSEMBL")
   mat_t$SYMBOL[is.na(mat_t$SYMBOL)] <- mat_t$ENSEMBL[is.na(mat_t$SYMBOL)]
   mat_t = subset(mat_t, !duplicated(subset(mat_t, select=c("ENSEMBL"))))
   rownames(mat_t) <- mat_t$ENSEMBL
@@ -190,11 +202,7 @@ for(i in 1:nrow(comp)){
                            fontsize_col = 10, 
                            fontsize_row = 10)
   
-  ggsave(filename = paste0(opt$outdir, comp[i, ], "/heatmap.png"), 
-         plot = heatmap.plot, 
-         device = "png", scale = 2,
-         width = 7, height = 7,units =  "in",
-         dpi = 320)
+  savePlot(paste0(opt$outdir, comp[i, ], "/heatmap.png"), heatmap.plot)
   
   ####################
   ## Volcano Plot
@@ -267,18 +275,14 @@ for(i in 1:nrow(comp)){
                                   gridlines.major = FALSE,
                                   gridlines.minor = FALSE)
   
-  ggsave(filename = paste0(opt$outdir, comp[i, ], "/volcano.png"), 
-         plot = volcano.plot, 
-         device = "png", scale = 2,
-         width = 7, height = 7,units =  "in",
-         dpi = 320)
+  savePlot(paste0(opt$outdir, comp[i, ], "/volcano.png"), volcano.plot)
   
   ####################
   ## GSEA
   ####################
   
   results$ens <- row.names(results)
-  ens2symbol <- AnnotationDbi::select(org.Hs.eg.db,
+  ens2symbol <- AnnotationDbi::select(organism,
                                       keys = results$ens,
                                       columns = "SYMBOL",
                                       keytype = "ENSEMBL")
@@ -322,11 +326,7 @@ for(i in 1:nrow(comp)){
          fill = gsea.subtitle) +
     theme_minimal()
   
-  ggsave(filename = paste0(opt$outdir, comp[i, ], "/GO_pathways_", comp[i, ], "_NES_from_GSEA.png"), 
-         plot = gobp.fig1, 
-         device = "png", scale = 2,
-         width = 7, height = 4,units =  "in",
-         dpi = 320)
+  savePlot(paste0(opt$outdir, comp[i, ], "/GO_pathways_", comp[i, ], "_NES_from_GSEA.png"), gobp.fig1, 7, 4)
   
   # Reactome
   fgseaResTidy.reactome <- fgseaRes.reactome %>%
@@ -346,9 +346,5 @@ for(i in 1:nrow(comp)){
          fill = gsea.subtitle) +
     theme_minimal()
   
-  ggsave(filename = paste0(opt$outdir, comp[i, ], "/Reactome_pathways_", comp[i, ], "_NES_from_GSEA.png"), 
-         plot = reactome.fig1, 
-         device = "png", scale = 2,
-         width = 7, height = 4,units =  "in",
-         dpi = 320)
+  savePlot(paste0(opt$outdir, comp[i, ], "/Reactome_pathways_", comp[i, ], "_NES_from_GSEA.png"), reactome.fig1, 7, 4)
 }
