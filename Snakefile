@@ -326,7 +326,6 @@ rule get_rid_of_zero_counts:
 #########################################
 rule multiqc:
     input:
-#        expand(RESULT_DIR + "fastqc/{sample}_R1_fastqc.html", sample=SAMPLES),
         expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample=SAMPLES),
         RESULT_DIR + "counts.txt"
     output:
@@ -334,8 +333,10 @@ rule multiqc:
     params:
         data_dir = [WORKING_DIR, RESULT_DIR],
         res_dir = RESULT_DIR + "multiqc/"
+    log:
+        RESULT_DIR + "logs/multiqc.log"
     shell:
-        "multiqc {params.data_dir} -o {params.res_dir}"
+        "multiqc -f -p {params.data_dir} -o {params.res_dir}"
 
 #########################################
 # Gene enrichment
