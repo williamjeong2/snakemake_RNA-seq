@@ -319,7 +319,19 @@ rule get_rid_of_zero_counts:
     message:
         "Delete rows with all zeros"
     script:
-        "../scripts/postProcess.py"
+        "scripts/postProcess.py"
+
+rule qc_table_maker:
+    input:
+        RESULT_DIR + "logs/fastp/",
+        expand(RESULT_DIR + "logs/fastp/{sample}.log.txt", sample = SAMPLES)
+    output:
+        RESULT_DIR + "fastp_QC_table.tsv"
+    message:
+        "Generate fastp QC results to table"
+    script:
+        "scripts/QC_table_maker.py"
+    
 
 #########################################
 # Report for all results
