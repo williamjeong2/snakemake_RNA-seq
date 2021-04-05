@@ -89,12 +89,14 @@ trans_sep_final["avg"] <- apply(ttemp, 1, mean)
 trans_sep_final <- subset(trans_sep_final, avg!=0)
 trans_sep_final <- trans_sep_final[,-c(ncol(trans_sep_final))]
 setwd(result_path)
+colnames(trans_sep_final) <- gsub("/transcript.gtf", "", colnames(trans_sep_final), fixed = T)
 write.csv(trans_sep_final, "transcript_FPKM.csv", row.names = FALSE)
 
 trans <- trans_sep_final %>% dplyr::select(5:(ncol(trans_sep_final)-1))
 trans <- trans %>% group_by(ensembl_gene_id, ref_gene_name) %>% summarise_all(funs(sum))
 
 g_df_final <- merge(x = trans, y = bmIDs_g, by = "ensembl_gene_id", all = FALSE)
+colnames(g_df_final) <- gsub("/transcript.gtf", "", colnames(g_df_final), fixed = T)
 setwd(result_path)
 write.csv(g_df_final, "gene_FPKM.csv", row.names = FALSE)
 
