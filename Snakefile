@@ -328,7 +328,7 @@ rule qc_table_maker:
     output:
         RESULT_DIR + "fastp_QC_table.tsv"
     message:
-        "Generate fastp QC results to table"
+        "Generate fastp QC table through fastp QC reports"
     script:
         "scripts/QC_table_maker.py"
     

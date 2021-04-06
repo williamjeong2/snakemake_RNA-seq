@@ -69,10 +69,10 @@ colnames(countdata) <- gsub("_rep$", "", colnames(countdata), fixed = T)
 colnames(countdata) <- gsub("_Rep$", "", colnames(countdata), fixed = T)
 
 if (grepl('^ENSG', row.names(countdata)[1])) {
-  organism <- "org.Hs.eg.db"
+  organism <- org.Hs.eg.db
 }
 if (grepl('^ENSMUSG', row.names(countdata)[1])) {
-  organism <- "org.Mm.eg.db"
+  organism <- org.Mm.eg.db
 }
 
 # Remove chr, start, end, strand, length columns
