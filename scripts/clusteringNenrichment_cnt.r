@@ -46,7 +46,7 @@ detectGroups <- function (x){  # x are col names
 
 savePlot <- function(path, plot, width = 7, height = 7){
   for(i in c("png", "svg")) {
-    ggsave(filename = paste0(opt$outdir, path, ".", i),
+    ggsave(filename = paste0(path, ".", i),
     plot = plot,
     device = i, scale = 2,
     width = width, height = height, units = "in",
@@ -137,30 +137,32 @@ for(i in 1:nrow(comp)){
   df <- cbind(meta, pca$x[, PCAxy])
   
   if(ncol(comp_tb)<20){ # change size depending of # samples
-    p = ggplot(df) + geom_point(aes(x=PC1, y= PC2, color = group), size=5)
+    p = ggplot(df, aes(x=PC1, y=PC2+.5, color=group, label=row.names(df)), size=5) + geom_point(aes(x=PC1, y= PC2, color = group), size=5)
   }else if(ncol(comp_tb)<50){
-    p = ggplot(df) + geom_point(aes(x=PC1, y= PC2, color = group), size=3)
+    p = ggplot(df, aes(x=PC1, y=PC2+.5, color=group, label=row.names(df)), size=3) + geom_point(aes(x=PC1, y= PC2, color = group), size=3)
   }else{
-    p = ggplot(df) + geom_point(aes(x=PC1, y= PC2, color = group), size=2)
+    p = ggplot(df, aes(x=PC1, y=PC2+.5, color=group, label=row.names(df)), size=2) + geom_point(aes(x=PC1, y= PC2, color = group), size=2)
   }
   
   # for showing shapes on ggplot2. The first 6 are default. Default mapping can only show 6 types.
   shapes = c(16,17,15,3,7,8,   1,2,4:6,9:15,18:25)
-  pca.group <- p + scale_shape_manual(values= shapes) +
+  theme<-theme(panel.background = element_blank(),panel.border=element_rect(fill=NA),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),strip.background=element_blank(),axis.text.x=element_text(colour="black"),axis.text.y=element_text(colour="black"),axis.ticks=element_line(colour="black"),plot.margin=unit(c(1,1,1,1),"line"), aspect.ratio=1)
+  pca.group <- p + scale_shape_manual(values= shapes) + 
     xlab(paste0("PC", opt$pcax ,": ", percentVar[1],"% variance")) +
     ylab(paste0("PC", opt$pcay ,": ", percentVar[2],"% variance")) + 
     ggtitle("Principal component analysis (PCA)") + 
-    coord_fixed(ratio=1.0) + theme(aspect.ratio=1)
+    coord_fixed(ratio=1.0) + theme
   
-  savePlot(paste0(opt$outdir, comp[i, ], "/PCA_by_condition.png"), pca.group)
+  savePlot(paste0(opt$outdir, comp[i, ], "/PCA_by_condition"), pca.group)
   
   ####################
   ## Heatmap Plot
   ####################
   
   # Get results from testing with FDR adjust pvalues
-  results <- results(ddsMat, pAdjustMethod = "fdr", alpha = opt$fdrval)
-  
+  # results <- results(ddsMat, pAdjustMethod = "fdr", alpha = opt$fdrval)
+  results <- results(ddsMat)
+
   # Add ENSEMBL
   results$ensembl <- mapIds(x = organism,
                             keys = row.names(results),
@@ -169,7 +171,7 @@ for(i in 1:nrow(comp)){
                             multiVals = "first")
   
   # Subset for only significant genes( q < 0.05)
-  results_sig <- subset(results, padj < opt$fdrval)
+  results_sig <- subset(results, pvalue < opt$fdrval)
   comp_tb$row <- rownames(comp_tb)
   results_sig$row <- rownames(results_sig)
   sig_tb = merge(x = as.data.frame(results_sig), y = comp_tb, by = "row", all=F)
@@ -202,7 +204,7 @@ for(i in 1:nrow(comp)){
                            fontsize_col = 10, 
                            fontsize_row = 10)
   
-  savePlot(paste0(opt$outdir, comp[i, ], "/heatmap.png"), heatmap.plot)
+  savePlot(paste0(opt$outdir, comp[i, ], "/heatmap"), heatmap.plot)
   
   ####################
   ## Volcano Plot
@@ -275,7 +277,7 @@ for(i in 1:nrow(comp)){
                                   gridlines.major = FALSE,
                                   gridlines.minor = FALSE)
   
-  savePlot(paste0(opt$outdir, comp[i, ], "/volcano.png"), volcano.plot)
+  savePlot(paste0(opt$outdir, comp[i, ], "/volcano"), volcano.plot)
   
   ####################
   ## GSEA
@@ -326,7 +328,7 @@ for(i in 1:nrow(comp)){
          fill = gsea.subtitle) +
     theme_minimal()
   
-  savePlot(paste0(opt$outdir, comp[i, ], "/GO_pathways_", comp[i, ], "_NES_from_GSEA.png"), gobp.fig1, 7, 4)
+  savePlot(paste0(opt$outdir, comp[i, ], "/GO_pathways_", comp[i, ], "_NES_from_GSEA"), gobp.fig1, 7, 4)
   
   # Reactome
   fgseaResTidy.reactome <- fgseaRes.reactome %>%
@@ -346,5 +348,5 @@ for(i in 1:nrow(comp)){
          fill = gsea.subtitle) +
     theme_minimal()
   
-  savePlot(paste0(opt$outdir, comp[i, ], "/Reactome_pathways_", comp[i, ], "_NES_from_GSEA.png"), reactome.fig1, 7, 4)
+  savePlot(paste0(opt$outdir, comp[i, ], "/Reactome_pathways_", comp[i, ], "_NES_from_GSEA"), reactome.fig1, 7, 4)
 }
