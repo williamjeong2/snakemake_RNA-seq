@@ -302,8 +302,8 @@ for(i in 1:nrow(comp)){
   
   ranks <- deframe(res2)
   
-  pathways.gobp <- gmtPathways("scripts/MSigDB_v7.2/c5.go.bp.v7.2.symbols.gmt")
-  pathways.reactome <- gmtPathways("scripts/MSigDB_v7.2/c2.cp.reactome.v7.2.symbols.gmt")
+  pathways.gobp <- gmtPathways("scripts/MSigDB_v7.3/c5.go.bp.v7.2.symbols.gmt")
+  pathways.reactome <- gmtPathways("scripts/MSigDB_v7.3/c2.cp.reactome.v7.2.symbols.gmt")
   
   fgseaRes.gobp <- fgsea(pathways=pathways.gobp, stats=ranks, min = 15, max = 500)
   fgseaRes.reactome <- fgsea(pathways=pathways.reactome, stats=ranks, min = 15, max = 500)
