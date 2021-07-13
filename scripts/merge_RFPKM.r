@@ -1,15 +1,18 @@
 #!/usr/bin/env Rscript
 list.of.packages <- c("data.table", "tidyr", "dplyr", "optparse")
 list.of.bio.packages <- c("")
+
+
 not.installed.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
 if(length(not.installed.packages)) install.packages(not.installed.packages, repos="http://cran.rstudio.com/", dependencies=TRUE)
 
+not.installed.bio.packages <- list.of.bio.packages[!(list.of.bio.packages %in% installed.packages()[, "Package"])]
 if(length(not.installed.bio.packages)){
   if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
   BiocManager::install(not.installed.bio.packages, suppressUpdates = TRUE)
 }
-lapply(list.of.bio.packages, require, character.only = T
+lapply(list.of.bio.packages, require, character.only = TRUE)
 lapply(list.of.packages, require, character.only = TRUE)
 
 option_list = list(

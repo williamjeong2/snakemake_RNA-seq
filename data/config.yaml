@@ -4,8 +4,8 @@ organism: homo_sapiens # human or mouse
 need_indexed: need # need or not
 aligner: hisat2 # HISAT2 or STAR
 ref:
-  hg_release_ver: "101"
-  mm_release_ver: "101"
+  hg_release_ver: "104"
+  mm_release_ver: "104"
 clustering_parmas:
   heatmap:
     pval: 0.05

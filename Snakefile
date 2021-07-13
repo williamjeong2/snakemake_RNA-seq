@@ -25,6 +25,7 @@ units.index.names = ['sample']
 units.index = units.index.str.replace('.fq', '')
 units.index = units.index.str.replace('.gz', '')
 units.index = units.index.str.replace('.fastq', '')
+units.index = units.index.str.replace('.txt', '')
 units.dropna(inplace = True)
 
 # create lists containing the sample names and conditions
