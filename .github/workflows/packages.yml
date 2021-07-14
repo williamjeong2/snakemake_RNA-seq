@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: snakemake_RNA-seq
+  IMAGE_NAME: snakemake_rna-seq
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
