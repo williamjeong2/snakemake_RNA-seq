@@ -303,14 +303,15 @@ rule create_PKM_table:
 rule create_counts_table:
     input:
         bams = expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample = SAMPLES),
-        gff  = WORKING_DIR + "genome/genome.gtf"
     output:
         RESULT_DIR + "counts.txt"
     message:
         "create read count talbe"
     threads: THREADS
+    parmas:
+        gtf  = WORKING_DIR + "genome/genome.gtf"
     shell:
-        "featureCounts -T {threads} -a {input.gff} -t exon -g gene_id -o {output} {input.bams}"
+        "featureCounts -T {threads} -a {params.gtf} -t exon -g gene_id -o {output} {input.bams}"
 
 rule get_rid_of_zero_counts:
     input:
