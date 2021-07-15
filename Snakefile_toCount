@@ -27,11 +27,9 @@ units.index = units.index.str.replace('.gz', '')
 units.index = units.index.str.replace('.fastq', '')
 units.index = units.index.str.replace('.txt', '')
 units.dropna(inplace = True)
-
 # create lists containing the sample names and conditions
 SAMPLES = units.index.get_level_values('sample').unique().tolist()
 samples = units.drop(units.columns[0], axis=1)
-
 # ----------------------------
 
         # # read the tabulated separated table containing the sample, condition and fastq file information∂DE
@@ -75,11 +73,12 @@ rule all:
     input:
         expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample=SAMPLES),
         expand(WORKING_DIR + 'stringtie/{sample}/transcript.gtf', sample=SAMPLES),
+        expand(WORKING_DIR + "stringtie/{sample}/transcript.gtf", sample=SAMPLES),
 #        expand(RESULT_DIR + "fastqc/{sample}_fastqc.html", sample=SAMPLES),
         WORKING_DIR + "genome/genome.gtf",
-        RESULT_DIR + 'gene_FPKM.csv',
         RESULT_DIR + "counts.txt",
-        RESULT_DIR + "multiqc/multiqc_report.html"
+        [WORKING_DIR + "genome/genome." + str(i) + ".ht2" for i in range(1,9)]    
+#        RESULT_DIR + "multiqc/multiqc_report.html"
     message:
         "Job done!"
 
@@ -95,8 +94,8 @@ rule fastp:
     input:
         get_fastq
     output:
-        fq1  = temp(WORKING_DIR + "trimmed/" + "{sample}_R1_trimmed.fq.gz"),
-        fq2  = temp(WORKING_DIR + "trimmed/" + "{sample}_R2_trimmed.fq.gz"),
+        fq1  = WORKING_DIR + "trimmed/" + "{sample}_R1_trimmed.fq.gz",
+        fq2  = WORKING_DIR + "trimmed/" + "{sample}_R2_trimmed.fq.gz",
         html = RESULT_DIR + "fastp/{sample}.html"
     message:"trimming {wildcards.sample} reads"
     threads: THREADS
@@ -186,7 +185,7 @@ if config["aligner"].upper().find("HISAT2") >= 0:
             threads: THREADS
             run:
                 if config["organism"].upper().find("HOMO") >= 0 or config["organism"].upper().find("HUMAN") >= 0:
-                    shell("cp scripts/make_grch38_tran.sh {params[0]} && sh temp/genome/make_grch38_tran.sh {params[1]} {threads}")
+                    shell("cp scripts/make_grch38_tran.sh {params[0]} && cd temp/genome/ && sh make_grch38_tran.sh {params[1]} {threads}")
                 elif config["organism"].upper().find("MUS") >= 0 or config["organism"].upper().find("MOUSE") >= 0:
                     shell("cp scripts/make_grcm38_tran.sh {params[0]} && sh temp/genome/make_grcm38_tran.sh {params[1]} {threads}")
 
@@ -195,7 +194,7 @@ if config["aligner"].upper().find("HISAT2") >= 0:
             get_trimmed,
             indexFiles = [WORKING_DIR + "genome/genome." + str(i) + ".ht2" for i in range(1,9)]
         output:
-            bams = temp(WORKING_DIR + "mapped/{sample}.sorted.bam"),
+            bams = WORKING_DIR + "mapped/{sample}.sorted.bam",
             log  = RESULT_DIR + "logs/hisat2/{sample}_log.txt"
         params:
             indexName = WORKING_DIR + "genome/genome",
@@ -237,7 +236,7 @@ elif config["aligner"].upper().find("STAR") >= 0:
         input:
             get_trimmed
         output:
-            bams = temp(WORKING_DIR + "mapped/{sample}.sorted.bam"),
+            bams = WORKING_DIR + "mapped/{sample}.sorted.bam"
         log:
             RESULT_DIR + "logs/star/{sample}.log.txt"
         params:
@@ -267,35 +266,16 @@ rule stringtie:
     input:
         bams = WORKING_DIR + "mapped/{sample}.sorted.bam"
     output:
-        r1 = temp(WORKING_DIR + "stringtie/{sample}/transcript.gtf"),
-        r2 = temp(WORKING_DIR + "stringtie/{sample}/gene_abundances.tsv"),
-        r3 = temp(WORKING_DIR + "stringtie/{sample}/cov_ref.gtf")
+        r1 = WORKING_DIR + "stringtie/{sample}/transcript.gtf",
+        r2 = WORKING_DIR + "stringtie/{sample}/gene_abundances.tsv",
+        r3 = WORKING_DIR + "stringtie/{sample}/cov_ref.gtf"
     message:
         "assemble RNA-Seq alignments into potential transcripts."
     threads: THREADS
     params:
         gtf = WORKING_DIR + "genome/genome.gtf"
     shell:
-        "stringtie -p {threads} -G {params.gtf} --rf -e -B -o {output.r1} -A {output.r2} -C {output.r3} --rf {input.bams} 2> {log}"
-
-rule create_PKM_table:
-    input:
-        WORKING_DIR
-#        expand(WORKING_DIR + "stringtie/{sample}/transcript.gtf", sample = SAMPLES)
-    output:
-        r1 = RESULT_DIR + "gene_FPKM.csv",
-        r2 = RESULT_DIR + "transcript_FPKM.csv"
-    params:
-        dataset = config["merge_PKM"]["organism"],
-        outdir = directory(RESULT_DIR),
-        trans_anno = "scripts/bmIDs_hg.tsv",
-        gene_anno = "scripts/bmIDs_g_hg.tsv"
-    message:
-        "create gene and transcript FPKM(if single-end reads, RPKM)."
-    conda:
-        "envs/merge_fpkm.yaml"
-    shell:
-        "Rscript scripts/merge_RFPKM.r --indir temp/ --outdir {params.outdir} --dataset {params.dataset} --trans {params.trans_anno} --gene {params.gene_anno}"
+        "stringtie -p {threads} -G {params.gtf} --rf -e -B -o {output.r1} -A {output.r2} -C {output.r3} --rf {input.bams}"
 
 #########################################
 # Get table containing the raw counts
@@ -310,7 +290,7 @@ rule create_counts_table:
         "create read count talbe"
     threads: THREADS
     params:
-        gtf  = WORKING_DIR + "genome/genome.gtf"
+        gtf = WORKING_DIR + "genome/genome.gtf"
     shell:
         "featureCounts -T {threads} -a {params.gtf} -t exon -g gene_id -o {output} {input.bams}"
 
@@ -321,56 +301,6 @@ rule get_rid_of_zero_counts:
         RESULT_DIR + "counts.txt"
     message:
         "Delete rows with all zeros"
-    params:
-        config["organism"].upper()
     script:
         "scripts/postProcess.py"
 
-rule qc_table_maker:
-    input:
-        RESULT_DIR + "logs/fastp/",
-        expand(RESULT_DIR + "logs/fastp/{sample}.log.txt", sample = SAMPLES)
-    output:
-        RESULT_DIR + "fastp_QC_table.tsv"
-    message:
-        "Generate fastp QC table through fastp QC reports"
-    script:
-        "scripts/QC_table_maker.py"
-    
-
-#########################################
-# Report for all results
-#########################################
-rule multiqc:
-    input:
-        expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample=SAMPLES),
-        RESULT_DIR + "counts.txt"
-    output:
-        RESULT_DIR + "multiqc/multiqc_report.html"
-    params:
-        data_dir = [WORKING_DIR, RESULT_DIR],
-        res_dir = RESULT_DIR + "multiqc/"
-    log:
-        RESULT_DIR + "logs/multiqc.log"
-    shell:
-        "multiqc -f -p {params.data_dir} -o {params.res_dir}"
-
-#########################################
-# Gene enrichment
-#########################################
-rule enrichment:
-    input:
-        countFile = RESULT_DIR + "counts.txt",
-        metadata = config["units"]
-    params:
-        output_dir = RESULT_DIR + "visualization/",
-        heatmap_pval = config["clustering_parmas"]["heatmap"]["pval"],
-        heatmapTopGenes = config["clustering_parmas"]["heatmap"]["top_genes"],
-        heatmapColor = config["clustering_parmas"]["heatmap"]["color"],
-        gsea_pval = config["gsea_params"]["pval_cutoff"],
-        gsea_fdr = config["gsea_params"]["fdr_cutoff"]
-    shell:"""
-    Rscript scripts/clusteringNenrichment_cnt.r --count {input.countFile} --metadata {input.metadata} --outdir {params.output_dir} \
-    --fdrval {params.heatmap_pval} --ntopgene {params.heatmapTopGenes} --hmapcolor {params.heatmapColor} \
-    --gseafdr {params.gsea_fdr} --gseapval {params.gsea_pval}
-    """

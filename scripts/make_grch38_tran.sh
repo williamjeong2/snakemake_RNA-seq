@@ -21,6 +21,9 @@ ENSEMBL_GRCh38_BASE=ftp://ftp.ensembl.org/pub/release-${ENSEMBL_RELEASE}/fasta/h
 ENSEMBL_GRCh38_GTF_BASE=ftp://ftp.ensembl.org/pub/release-${ENSEMBL_RELEASE}/gtf/homo_sapiens
 GTF_FILE=Homo_sapiens.GRCh38.${ENSEMBL_RELEASE}.gtf
 
+cd "$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+echo $PWD
+
 get() {
 	file=$1
 	if ! wget --version >/dev/null 2>/dev/null ; then
@@ -66,19 +69,25 @@ if [ ! -x "$HISAT2_EXON_SCRIPT" ] ; then
 	fi
 fi
 
-rm -f genome.fa
+# rm -f genome.fa
 F=Homo_sapiens.GRCh38.dna.primary_assembly.fa
-if [ ! -f $F ] ; then
+if [ ! -f $F.gz ] ; then
 	get ${ENSEMBL_GRCh38_BASE}/$F.gz || (echo "Error getting $F" && exit 1)
 	gunzip $F.gz || (echo "Error unzipping $F" && exit 1)
 	mv $F genome.fa
 fi
 
-if [ ! -f $GTF_FILE ] ; then
-       get ${ENSEMBL_GRCh38_GTF_BASE}/${GTF_FILE}.gz || (echo "Error getting ${GTF_FILE}" && exit 1)
-       gunzip ${GTF_FILE}.gz || (echo "Error unzipping ${GTF_FILE}" && exit 1)
-       ${HISAT2_SS_SCRIPT} ${GTF_FILE} > genome.ss
-       ${HISAT2_EXON_SCRIPT} ${GTF_FILE} > genome.exon
+if [ -f $F.gz ] ; then
+	gunzip $F.gz || (echo "Error unzipping $F" && exit 1)
+	mv $F genome.fa
+fi
+
+if [ ! -f $GTF_FILE | ! -f genome.gtf ] ; then
+	get ${ENSEMBL_GRCh38_GTF_BASE}/${GTF_FILE}.gz || (echo "Error getting ${GTF_FILE}" && exit 1)
+	gunzip ${GTF_FILE}.gz || (echo "Error unzipping ${GTF_FILE}" && exit 1)
+	${HISAT2_SS_SCRIPT} ${GTF_FILE} > genome.ss
+	${HISAT2_EXON_SCRIPT} ${GTF_FILE} > genome.exon
+	mv $GTF_FILE genome.gtf
 fi
 
 CMD="${HISAT2_BUILD_EXE} -p ${THREADS} genome.fa --ss genome.ss --exon genome.exon genome"
