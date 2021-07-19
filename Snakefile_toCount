@@ -71,9 +71,6 @@ def get_trimmed(wildcards):
 #################
 rule all:
     input:
-        expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample=SAMPLES),
-        expand(WORKING_DIR + 'stringtie/{sample}/transcript.gtf', sample=SAMPLES),
-        expand(WORKING_DIR + "stringtie/{sample}/transcript.gtf", sample=SAMPLES),
 #        expand(RESULT_DIR + "fastqc/{sample}_fastqc.html", sample=SAMPLES),
         WORKING_DIR + "genome/genome.gtf",
         RESULT_DIR + "counts.txt",
@@ -94,8 +91,8 @@ rule fastp:
     input:
         get_fastq
     output:
-        fq1  = WORKING_DIR + "trimmed/" + "{sample}_R1_trimmed.fq.gz",
-        fq2  = WORKING_DIR + "trimmed/" + "{sample}_R2_trimmed.fq.gz",
+        fq1  = temp(WORKING_DIR + "trimmed/" + "{sample}_R1_trimmed.fq.gz"),
+        fq2  = temp(WORKING_DIR + "trimmed/" + "{sample}_R2_trimmed.fq.gz"),
         html = RESULT_DIR + "fastp/{sample}.html"
     message:"trimming {wildcards.sample} reads"
     threads: THREADS
@@ -171,9 +168,6 @@ if config["aligner"].upper().find("HISAT2") >= 0:
 
     if config["need_indexed"].upper().find("NEED") >= 0:
         rule hisat_index:
-            # input:
-                # fasta = WORKING_DIR + "genome/genome.fa",
-                # gtf = WORKING_DIR + "genome/genome.gtf"
             output:
                 [WORKING_DIR + "genome/genome." + str(i) + ".ht2" for i in range(1,9)],
                 WORKING_DIR + "genome/genome.gtf"
@@ -194,7 +188,7 @@ if config["aligner"].upper().find("HISAT2") >= 0:
             get_trimmed,
             indexFiles = [WORKING_DIR + "genome/genome." + str(i) + ".ht2" for i in range(1,9)]
         output:
-            bams = WORKING_DIR + "mapped/{sample}.sorted.bam",
+            bams = temp(WORKING_DIR + "mapped/{sample}.sorted.bam"),
             log  = RESULT_DIR + "logs/hisat2/{sample}_log.txt"
         params:
             indexName = WORKING_DIR + "genome/genome",
@@ -236,7 +230,7 @@ elif config["aligner"].upper().find("STAR") >= 0:
         input:
             get_trimmed
         output:
-            bams = WORKING_DIR + "mapped/{sample}.sorted.bam"
+            temp(bams = WORKING_DIR + "mapped/{sample}.sorted.bam"),
         log:
             RESULT_DIR + "logs/star/{sample}.log.txt"
         params:
@@ -266,9 +260,9 @@ rule stringtie:
     input:
         bams = WORKING_DIR + "mapped/{sample}.sorted.bam"
     output:
-        r1 = WORKING_DIR + "stringtie/{sample}/transcript.gtf",
-        r2 = WORKING_DIR + "stringtie/{sample}/gene_abundances.tsv",
-        r3 = WORKING_DIR + "stringtie/{sample}/cov_ref.gtf"
+        r1 = temp(WORKING_DIR + "stringtie/{sample}/transcript.gtf"),
+        r2 = temp(WORKING_DIR + "stringtie/{sample}/gene_abundances.tsv"),
+        r3 = temp(WORKING_DIR + "stringtie/{sample}/cov_ref.gtf")
     message:
         "assemble RNA-Seq alignments into potential transcripts."
     threads: THREADS
@@ -296,11 +290,15 @@ rule create_counts_table:
 
 rule get_rid_of_zero_counts:
     input:
-        WORKING_DIR + "counts_.txt"
+        WORKING_DIR + "counts_.txt",
+        expand(RESULT_DIR + "fastqc/{sample}_fastqc.html", sample=SAMPLES)
     output:
         RESULT_DIR + "counts.txt"
     message:
         "Delete rows with all zeros"
+    params:
+        config["organism"].upper(),
+        WORKING_DIR + "mapped/"
     script:
         "scripts/postProcess.py"
 

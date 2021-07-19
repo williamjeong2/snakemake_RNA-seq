@@ -73,8 +73,6 @@ def get_trimmed(wildcards):
 #################
 rule all:
     input:
-        expand(WORKING_DIR + "mapped/{sample}.sorted.bam", sample=SAMPLES),
-        expand(WORKING_DIR + 'stringtie/{sample}/transcript.gtf', sample=SAMPLES),
 #        expand(RESULT_DIR + "fastqc/{sample}_fastqc.html", sample=SAMPLES),
         WORKING_DIR + "genome/genome.gtf",
         RESULT_DIR + 'gene_FPKM.csv',
@@ -172,9 +170,6 @@ if config["aligner"].upper().find("HISAT2") >= 0:
 
     if config["need_indexed"].upper().find("NEED") >= 0:
         rule hisat_index:
-            # input:
-                # fasta = WORKING_DIR + "genome/genome.fa",
-                # gtf = WORKING_DIR + "genome/genome.gtf"
             output:
                 [WORKING_DIR + "genome/genome." + str(i) + ".ht2" for i in range(1,9)],
                 WORKING_DIR + "genome/genome.gtf"
@@ -316,13 +311,15 @@ rule create_counts_table:
 
 rule get_rid_of_zero_counts:
     input:
-        WORKING_DIR + "counts_.txt"
+        WORKING_DIR + "counts_.txt",
+        expand(RESULT_DIR + "fastqc/{sample}_fastqc.html", sample=SAMPLES)
     output:
         RESULT_DIR + "counts.txt"
     message:
         "Delete rows with all zeros"
     params:
-        config["organism"].upper()
+        config["organism"].upper(),
+        WORKING_DIR + "mapped/"
     script:
         "scripts/postProcess.py"
 
@@ -336,7 +333,6 @@ rule qc_table_maker:
         "Generate fastp QC table through fastp QC reports"
     script:
         "scripts/QC_table_maker.py"
-    
 
 #########################################
 # Report for all results
