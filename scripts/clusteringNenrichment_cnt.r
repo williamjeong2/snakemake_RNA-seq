@@ -98,14 +98,14 @@ for(i in 1:nrow(comp)){
   selectComparisons = strsplit(comp[i, ], "-")
   comp1 = selectComparisons[[1]][1]
   comp2 = selectComparisons[[1]][2]
-  comp1_tb = countdata[, grepl(comp1, colnames(countdata))]
-  comp2_tb = countdata[, grepl(comp2, colnames(countdata))]
-  comp_tb = as.data.frame(c(comp1_tb, comp2_tb), row.names = rownames(countdata))
+  comp1_tb = countdata[, subset(samples, paste(cell_type, treatment, sep="_") == comp1)$samples]
+  comp2_tb = countdata[, subset(samples, paste(cell_type, treatment, sep="_") == comp2)$samples]
+  comp_tb = data.frame(c(comp1_tb, comp2_tb), row.names = rownames(countdata), check.names = F)
   rm(comp1_tb, comp2_tb)
   
   metadata = samples[colnames(comp_tb), ]
   metadata = unite(metadata, condition, c(cell_type, treatment), remove = T)
-  column_to_rownames(metadata, var = "samples")
+  # column_to_rownames(metadata, var = "samples")
   metadata$condition <- factor(metadata$condition)
   metadata <- metadata[,"condition"]
 
