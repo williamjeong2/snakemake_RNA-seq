@@ -35,10 +35,8 @@ col3 = [counts.columns[0]]
 new_col = col3 + col1 + col2
 counts = counts[new_col]
 counts.drop_duplicates(['Geneid'], keep='first')
-col = counts.columns
-counts.rename(columns=[i.replace(snakemake.params[1], "") for i in col], inplace = True)
-col = counts.columns
-counts.rename(columns=[i.replace(".sorted.bam", "") for i in col], inplace = True)
+counts.columns = [i.replace(snakemake.params[1], "") for i in list(counts.columns)]
+counts.columns = [i.replace(".sorted.bam", "") for i in list(counts.columns)]
 counts.to_excel(snakemake.output[0].split(".")[0]+".xlsx",
                sheet_name="Sheet1",
                index=False)
