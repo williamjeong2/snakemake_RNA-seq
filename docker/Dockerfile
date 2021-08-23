@@ -8,11 +8,11 @@ ARG DEBIAN_FRONTEND=noninteractive
 # RUN sed -i.bak -re "s/([a-z]{2}.)?archive.ubuntu.com|security.ubuntu.com/mirror.kakao.com/g" /etc/apt/sources.list
 RUN apt-get update \
     && apt-get install -y python3 python3-pip wget git less vim \
-    && pip3 install pandas awscli
-RUN apt-get install -y libssl-dev libcurl4-openssl-dev libxml2-dev curl libcairo2-dev libxt-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libproj-dev libproj-dev libgdal-dev
-RUN echo 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/' >> /etc/apt/sources.list
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 51716619E084DAB9
-RUN apt-get update && apt-get install -y r-base r-base-dev r-recommended
+    && pip3 install pandas awscli && \
+    apt-get install -y libssl-dev libcurl4-openssl-dev libxml2-dev curl libcairo2-dev libxt-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libproj-dev libproj-dev libgdal-dev xvfb && \
+    echo 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/' >> /etc/apt/sources.list && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 51716619E084DAB9 && \
+    apt-get update && apt-get install -y r-base r-base-dev r-recommended
 
 ####################
 # install R
@@ -29,35 +29,35 @@ RUN apt-get update -y && \
     TERM=xterm && \
     apt-get update
 
-RUN Rscript -e 'install.packages("optparse", repos="http://cran.rstudio.com/", dependencies=TRUE)'
-RUN Rscript -e 'install.packages("data.table", repos="http://cran.rstudio.com/", dependencies=TRUE)'
-RUN Rscript -e 'install.packages("tidyr", repos="http://cran.rstudio.com/", dependencies=TRUE)'
-RUN Rscript -e 'install.packages("dplyr", repos="http://cran.rstudio.com/", dependencies=TRUE)'
-RUN Rscript -e 'install.packages("BiocManager", repos="http://cran.rstudio.com/", dependencies=TRUE)'
-RUN Rscript -e 'BiocManager::install("DESeq2", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("ggplot2", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("clusterProfiler", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("DOSE", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("KEGG.db", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("org.Mm.eg.db", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("org.Hs.eg.db", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("pheatmap", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("genefilter", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("RColorBrewer", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("GO.db", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("topGO", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("gage", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("ggsci", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("curl", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("biomaRt", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("EnhancedVolcano", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("fgsea", suppressUpdates = TRUE)'
-RUN Rscript -e 'BiocManager::install("DEGreport", suppressUpdates = TRUE)'
+RUN Rscript -e 'install.packages("optparse", repos="http://cran.rstudio.com/", dependencies=TRUE)' && \
+    Rscript -e 'install.packages("data.table", repos="http://cran.rstudio.com/", dependencies=TRUE)' && \
+    Rscript -e 'install.packages("tidyr", repos="http://cran.rstudio.com/", dependencies=TRUE)' && \
+    Rscript -e 'install.packages("dplyr", repos="http://cran.rstudio.com/", dependencies=TRUE)' && \
+    Rscript -e 'install.packages("BiocManager", repos="http://cran.rstudio.com/", dependencies=TRUE)' && \
+    Rscript -e 'BiocManager::install("DESeq2", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("ggplot2", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("clusterProfiler", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("DOSE", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("KEGG.db", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("org.Mm.eg.db", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("org.Hs.eg.db", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("pheatmap", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("genefilter", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("RColorBrewer", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("GO.db", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("topGO", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("gage", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("ggsci", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("curl", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("biomaRt", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("EnhancedVolcano", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("fgsea", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("DEGreport", suppressUpdates = TRUE)'
 
 # install miniconda to /miniconda
-RUN curl -LO http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-RUN bash Miniconda3-latest-Linux-x86_64.sh -p /miniconda -b
-RUN rm Miniconda3-latest-Linux-x86_64.sh
+RUN curl -LO http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    bash Miniconda3-latest-Linux-x86_64.sh -p /miniconda -b && \
+    rm Miniconda3-latest-Linux-x86_64.sh
 ENV PATH=/miniconda/bin:${PATH}
 RUN conda update -y conda
 
@@ -67,6 +67,12 @@ RUN git clone https://github.com/WilliamJeong2/snakemake_RNA-seq.git
 RUN conda install -c conda-forge mamba
 RUN mamba env create -f snakemake_RNA-seq/envs/global_env.yaml
 
+# Download chrome driver to get fastq files from SRA DB
+ARG CHROME_VERSION="91.0.4472.114-1"
+RUN wget --no-verbose -O /tmp/chrome.deb https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb \
+  && apt install -y /tmp/chrome.deb \
+  && rm /tmp/chrome.deb
+
 # Clean up
 RUN cd / && \
   rm -rf /tmp/* && \
@@ -75,12 +81,12 @@ RUN cd / && \
   rm -rf /var/lib/apt/lists/* && \
   apt-get clean
 
-RUN cat /home/snakemake_RNA-seq/docker/conda_init.sh >> /root/.bashrc
-RUN echo "conda activate rnaseq" >> /root/.bashrc
+RUN cat /home/snakemake_RNA-seq/docker/conda_init.sh >> /root/.bashrc && \
+    echo "conda activate rnaseq" >> /root/.bashrc
 
 # Make RUN commands use the new environment
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
-RUN chmod -R 777 /home/snakemake_RNA-seq/
-RUN /bin/bash -c "source /root/.bashrc"
+RUN chmod -R 777 /home/snakemake_RNA-seq/ && \
+    /bin/bash -c "source /root/.bashrc"
 
 WORKDIR /home/snakemake_RNA-seq
