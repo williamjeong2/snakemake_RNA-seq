@@ -9,7 +9,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y python3 python3-pip wget git less vim \
     && pip3 install pandas awscli && \
-    apt-get install -y libssl-dev libcurl4-openssl-dev libxml2-dev curl libcairo2-dev libxt-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libproj-dev libproj-dev libgdal-dev xvfb && \
+    apt-get install -y libssl-dev libcurl4-openssl-dev libxml2-dev curl libcairo2-dev libxt-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libproj-dev libgdal-dev xvfb && \
     echo 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/' >> /etc/apt/sources.list && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 51716619E084DAB9 && \
     apt-get update && apt-get install -y r-base r-base-dev r-recommended
