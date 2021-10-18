@@ -314,7 +314,8 @@ rule get_rid_of_zero_counts:
         WORKING_DIR + "counts_.txt",
         expand(RESULT_DIR + "fastqc/{sample}_fastqc.html", sample=SAMPLES)
     output:
-        RESULT_DIR + "counts.txt"
+        RESULT_DIR + "counts.txt",
+        RESULT_DIR + "TPM.txt"
     message:
         "Delete rows with all zeros"
     params:

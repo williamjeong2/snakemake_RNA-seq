@@ -11,6 +11,7 @@ except:
     import pybiomart, pandas
 
 import pandas as pd
+import numpy as np
 from pybiomart import Server
 
 counts = pd.read_table(snakemake.input[0],
@@ -43,6 +44,38 @@ counts.to_excel(snakemake.output[0].split(".")[0]+".xlsx",
 counts.to_csv(snakemake.output[0],
         sep="\t",
         index=False)
+
+# read count to tpm
+
+def readCount2tpm(df, sample_name):
+    """
+    convert read count to TPM (transcripts per million)
+    :params df: a dataframe contains the result coming from featureCounts
+    :params sample_name: a list, all sample names, same as the result of feature Counts
+    :return: TPM
+    """
+    result = df
+    sample_reads = result.loc[:, sample_name].copy()
+    gene_len = result.loc[:, ['Length']]
+    rate = sample_reads.values / gene_len.values
+    tpm = rate / np.sum(rate, axis=0).reshape(1, -1) * 1e6
+    
+    return pd.DataFrame(data=tpm, columns=sample_name, index=result.Geneid)
+
+counts = pd.read_table(snakemake.input[0], 
+                        sep = "\t",
+                        skiprows = 1)
+counts['rowSum'] = counts.iloc[:, 6:].sum(axis=1)
+counts = counts[counts['rowSum'] != 0].drop(columns="rowSum")
+counts.drop(counts.columns[1:5], axis=1, inplace=True)
+counts.columns = [i.replace(snakemake.params[1], "") for i in list(counts.columns)]
+counts.columns = [i.replace(".sorted.bam", "") for i in list(counts.columns)]
+
+tpm = readCount2tpm(counts, counts.columns[2:])
+tpm.to_excel(snakemake.output[1].split(".")[0] + ".xlsx",
+            sep = "\t",
+            index=True)
+            
 
 cmd = "rm -f " + snakemake.input[0]
 os.system(cmd)
