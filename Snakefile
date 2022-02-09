@@ -305,14 +305,14 @@ rule create_counts_table:
         "create read count talbe"
     threads: THREADS
     params:
-        gtf  = WORKING_DIR + "genome/genome.gtf"
+        gtf = WORKING_DIR + "genome/genome.gtf"
     shell:
         "featureCounts -T {threads} -a {params.gtf} -t exon -g gene_id -o {output} {input.bams}"
 
 rule get_rid_of_zero_counts:
     input:
         WORKING_DIR + "counts_.txt",
-        expand(RESULT_DIR + "fastqc/{sample}_fastqc.html", sample=SAMPLES)
+        # expand(RESULT_DIR + "fastqc/{sample}_fastqc.html", sample=SAMPLES)
     output:
         RESULT_DIR + "counts.txt",
         RESULT_DIR + "TPM.txt"

@@ -179,7 +179,7 @@ if config["aligner"].upper().find("HISAT2") >= 0:
             threads: THREADS
             run:
                 if config["organism"].upper().find("HOMO") >= 0 or config["organism"].upper().find("HUMAN") >= 0:
-                    shell("cp scripts/make_grch38_tran.sh {params[0]} && cd temp/genome/ && sh make_grch38_tran.sh {params[1]} {threads}")
+                    shell("cp scripts/make_grch38_tran.sh {params[0]} && sh temp/genome/make_grch38_tran.sh {params[1]} {threads}")
                 elif config["organism"].upper().find("MUS") >= 0 or config["organism"].upper().find("MOUSE") >= 0:
                     shell("cp scripts/make_grcm38_tran.sh {params[0]} && sh temp/genome/make_grcm38_tran.sh {params[1]} {threads}")
 
@@ -230,7 +230,7 @@ elif config["aligner"].upper().find("STAR") >= 0:
         input:
             get_trimmed
         output:
-            temp(bams = WORKING_DIR + "mapped/{sample}.sorted.bam"),
+            bams = temp(WORKING_DIR + "mapped/{sample}.sorted.bam"),
         log:
             RESULT_DIR + "logs/star/{sample}.log.txt"
         params:
@@ -269,7 +269,7 @@ rule stringtie:
     params:
         gtf = WORKING_DIR + "genome/genome.gtf"
     shell:
-        "stringtie -p {threads} -G {params.gtf} --rf -e -B -o {output.r1} -A {output.r2} -C {output.r3} --rf {input.bams}"
+        "stringtie -p {threads} -G {params.gtf} --rf -e -B -o {output.r1} -A {output.r2} -C {output.r3} --rf {input.bams} 2> {log}"
 
 #########################################
 # Get table containing the raw counts
@@ -291,9 +291,10 @@ rule create_counts_table:
 rule get_rid_of_zero_counts:
     input:
         WORKING_DIR + "counts_.txt",
-        expand(RESULT_DIR + "fastqc/{sample}_fastqc.html", sample=SAMPLES)
+        # expand(RESULT_DIR + "fastqc/{sample}_fastqc.html", sample=SAMPLES)
     output:
-        RESULT_DIR + "counts.txt"
+        RESULT_DIR + "counts.txt",
+        RESULT_DIR + "TPM.txt"
     message:
         "Delete rows with all zeros"
     params:
