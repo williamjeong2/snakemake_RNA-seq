@@ -82,7 +82,7 @@ if [ -f $F.gz ] ; then
 	mv $F genome.fa
 fi
 
-if [ ! -f $GTF_FILE | ! -f genome.gtf ] ; then
+if [ ! -f $GTF_FILE ] || [ ! -f genome.gtf ] ; then
 	get ${ENSEMBL_GRCh38_GTF_BASE}/${GTF_FILE}.gz || (echo "Error getting ${GTF_FILE}" && exit 1)
 	gunzip ${GTF_FILE}.gz || (echo "Error unzipping ${GTF_FILE}" && exit 1)
 	${HISAT2_SS_SCRIPT} ${GTF_FILE} > genome.ss
