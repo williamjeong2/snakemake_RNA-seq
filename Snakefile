@@ -15,7 +15,8 @@ import os
 configfile: "data/config.yaml" # where to find parameters
 WORKING_DIR = config["working_dir"]
 RESULT_DIR = config["result_dir"]
-THREADS = config["threads"]
+THREADS = os.cpu_count()
+
 ########################
 
 # Edited
