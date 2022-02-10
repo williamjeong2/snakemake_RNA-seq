@@ -73,9 +73,10 @@ counts.columns = [i.replace(".sorted.bam", "") for i in list(counts.columns)]
 
 tpm = readCount2tpm(counts, counts.columns[2:])
 tpm.to_excel(snakemake.output[1].split(".")[0] + ".xlsx",
-            sep = "\t",
             index=True)
-            
+tpm.to_csv(snakemake.output[1],
+        sep="\t",
+        index=False)
 
 cmd = "rm -f " + snakemake.input[0]
 os.system(cmd)

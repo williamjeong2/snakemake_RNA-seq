@@ -17,3 +17,5 @@ dependencies:
   - pandoc=2.11.2
   - openpyxl=3.0.5
   - xlrd=1.2.0
+  - pybiomart
+  - numpy
