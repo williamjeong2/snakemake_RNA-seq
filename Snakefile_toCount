@@ -31,6 +31,8 @@ units.dropna(inplace = True)
 # create lists containing the sample names and conditions
 SAMPLES = units.index.get_level_values('sample').unique().tolist()
 samples = units.drop(units.columns[0], axis=1)
+samples['fq1'] = "data/" + samples['fq1'].astype(str)
+samples['fq2'] = "data/" + samples['fq2'].astype(str)
 # ----------------------------
 
         # # read the tabulated separated table containing the sample, condition and fastq file information∂DE
