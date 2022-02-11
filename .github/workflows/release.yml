@@ -25,7 +25,7 @@ jobs:
         id: docker_meta
         uses: crazy-max/ghaction-docker-meta@v1
         with:
-          images: williamjeong2/snakemake_rna-seq
+          images: williamjeong2/snakemake_RNA-seq
           tag-semver: |
             {{version}}
             {{major}}.{{minor}}
