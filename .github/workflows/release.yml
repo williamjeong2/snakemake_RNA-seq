@@ -20,6 +20,16 @@ jobs:
         name: Checkout
         uses: actions/checkout@v2
         
+      -
+        name: Docker meta
+        id: docker_meta
+        uses: crazy-max/ghaction-docker-meta@v1
+        with:
+          images: williamjeong2/snakemake_rna-seq
+          tag-semver: |
+            {{version}}
+            {{major}}.{{minor}}
+        
       - 
         name: Set env
         run: |
@@ -47,7 +57,9 @@ jobs:
           context: .
           file: docker/Dockerfile_toCount
           push: true
-          tags: |            
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_ID }}:latest
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_ID }}:${{ env.RELEASE_VERSION }}
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+#           tags: |            
+#             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_ID }}:latest
+#             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_ID }}:${{ env.RELEASE_VERSION }}
 
