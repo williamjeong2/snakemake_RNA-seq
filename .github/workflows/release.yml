@@ -40,9 +40,6 @@ jobs:
         with:
           file: docker/Dockerfile_toCount
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tag-semver: |
-            {{version}}
-            {{major}}.{{minor}}
             
       - 
         name: Build and push
