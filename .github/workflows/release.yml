@@ -26,6 +26,7 @@ jobs:
         id: docker_meta
         uses: docker/build-push-action@v2
         with:
+          file: docker/Dockerfile_toCount
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tag-semver: |
             {{version}}
