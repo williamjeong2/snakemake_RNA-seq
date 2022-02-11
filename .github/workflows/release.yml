@@ -7,6 +7,8 @@ on:
     tags:
       - '**'
 
+  workflow_dispatch:
+  
 env:
   IMAGE_NAME: snakemake_rna-seq
 
@@ -20,7 +22,11 @@ jobs:
         
       - 
         name: Set env
-        run: echo "RELEASE_VERSION=${GTHUB_REF#refs/*/v}" >> $GITHUB_ENV
+        run: |
+          echo "RELEASE_VERSION=${GTHUB_REF#refs/*/v}" >> $GITHUB_ENV
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_ENV
         
       - 
         name: Set up Docker Buildx
@@ -41,11 +47,7 @@ jobs:
           context: .
           file: docker/Dockerfile_toCount
           push: true
-          tags: |
-            IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
-            IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-            echo IMAGE_ID=$IMAGE_ID
-            
-            ghcr.io/${{ github.repository_owner }}/$IMAGE_ID:latest
-            ghcr.io/${{ github.repository_owner }}/$IMAGE_ID:${{ env.RELEASE_VERSION }}
+          tags: |            
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_ID }}:latest
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_ID }}:${{ env.RELEASE_VERSION }}
 
