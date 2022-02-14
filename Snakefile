@@ -278,7 +278,7 @@ rule stringtie:
 rule create_PKM_table:
     input:
         WORKING_DIR
-#        expand(WORKING_DIR + "stringtie/{sample}/transcript.gtf", sample = SAMPLES)
+        expand(WORKING_DIR + "stringtie/{sample}/transcript.gtf", sample = SAMPLES)
     output:
         r1 = RESULT_DIR + "gene_FPKM.csv",
         r2 = RESULT_DIR + "transcript_FPKM.csv"
