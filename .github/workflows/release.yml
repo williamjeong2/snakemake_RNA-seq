@@ -2,10 +2,10 @@ name: CI
 
 on:
   push:
-    branches:
-      - '**'
+#     branches:
+#       - '**'
     tags:
-      - '**'
+      - 'v*'
 
   workflow_dispatch:
   
