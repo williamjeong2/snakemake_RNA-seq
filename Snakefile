@@ -16,7 +16,6 @@ configfile: "data/config.yaml" # where to find parameters
 WORKING_DIR = config["working_dir"]
 RESULT_DIR = config["result_dir"]
 THREADS = os.cpu_count()
-
 ########################
 
 # Edited
@@ -27,21 +26,19 @@ units.index = units.index.str.replace('.fq', '')
 units.index = units.index.str.replace('.gz', '')
 units.index = units.index.str.replace('.fastq', '')
 units.index = units.index.str.replace('.txt', '')
+# fill the file path existing the sample
+input_list = list(set([i.split('_')[0] for i in os.listdir("data/") if i.split('_')[0] in units.index]))
+for fname in os.listdir("/data"):
+    fname = fname.split('_1')[0]
+    if fname.endswith('_1.fastq'):
+        units.loc[[fname], 'fq1'] = "data/" + fname.split('.')[0] + "_1.fastq"
+    if fname.endswith('_2.fastq'):
+        fname = fname.split('_2')[0]
+        units.loc[[fname], 'fq2'] = "data/" + fname.split('.')[0] + "_2.fastq"
 units.dropna(inplace = True)
-
 # create lists containing the sample names and conditions
 SAMPLES = units.index.get_level_values('sample').unique().tolist()
 samples = units.drop(units.columns[0], axis=1)
-samples['fq1'] = "data/" + samples['fq1'].astype(str)
-samples['fq2'] = "data/" + samples['fq2'].astype(str)
-# ----------------------------
-
-        # # read the tabulated separated table containing the sample, condition and fastq file information∂DE
-        # units = pd.read_table(config["units"], dtype=str).set_index(["sample"], drop=False)
-
-        # # create lists containing the sample names and conditions
-        # SAMPLES = units.index.get_level_values('sample').unique().tolist()
-        # samples = pd.read_csv(config["units"], dtype=str,index_col=0,sep="\t")
 
 ###########################
 # Input functions for rules
@@ -99,7 +96,7 @@ rule fastp:
         fq2  = temp(WORKING_DIR + "trimmed/" + "{sample}_R2_trimmed.fq.gz"),
         html = RESULT_DIR + "fastp/{sample}.html"
     message:"trimming {wildcards.sample} reads"
-    threads: THREADS
+    threads: THREADS//10
     priority: 10
     log:
         RESULT_DIR + "logs/fastp/{sample}.log.txt"
