@@ -26,8 +26,8 @@ option_list = list(
   make_option("--pcay", type="character", default="2", metavar="character"), # string
   # heatmap parmas
   make_option("--fdrval", type="double", default=0.05, metavar="number"),
-  make_option("--ntopgene", type="integer", default= 30, metavar="number"),
-  make_option("--hmapcolor", type="character", default="YlOrBr", metavar="character"),
+  make_option("--ntopgene", type="integer", default= 50, metavar="number"),
+  make_option("--hmapcolor", type="character", default="RdBu", metavar="character"),
   # GSEA
   make_option("--gseafdr", type="double", default=0.25, metavar="number"),
   make_option("--gseapval", type="double", default=0.01, metavar="number")
@@ -47,10 +47,10 @@ detectGroups <- function (x){  # x are col names
 savePlot <- function(path, plot, width = 7, height = 7){
   for(i in c("png", "svg")) {
     ggsave(filename = paste0(path, ".", i),
-    plot = plot,
-    device = i, scale = 2,
-    width = width, height = height, units = "in",
-    dpi = 320)
+           plot = plot,
+           device = i, scale = 2,
+           width = width, height = height, units = "in",
+           dpi = 320)
   }
 }
 
@@ -59,7 +59,7 @@ savePlot <- function(path, plot, width = 7, height = 7){
 ####################
 
 # Import counts table
-countdata <- read.table(opt$count, header = TRUE, row.names = 1)
+countdata <- read.table(opt$count, header = TRUE, row.names = 1, sep = "\t")
 
 # Remove .bam from column identifiers
 colnames(countdata) <- gsub(".sorted.bam", "", colnames(countdata), fixed = T)
@@ -76,10 +76,10 @@ if (grepl('^ENSMUSG', row.names(countdata)[1])) {
 }
 
 # Remove chr, start, end, strand, length columns
-countdata <- countdata[, c(-1:-5)]
+countdata <- countdata[, c(-1)]
 
 comparison <- read_excel(opt$metadata, skip = 2, sheet = "comparisons")
-comp = as.data.frame(paste(paste(comparison$ctrl_cellType,comparison$ctrl_group, sep = "_"), paste(comparison$treat_cellType,comparison$treat_group, sep = "_"), sep = "-"))
+comp = as.data.frame(paste(paste(comparison$ctrl_cellType,comparison$ctrl_group, sep = "__"), paste(comparison$treat_cellType,comparison$treat_group, sep = "__"), sep = "-"))
 colnames(comp) <- "comparison_list"
 
 samples <- read_excel(opt$metadata, sheet = "samples")
@@ -98,17 +98,16 @@ for(i in 1:nrow(comp)){
   selectComparisons = strsplit(comp[i, ], "-")
   comp1 = selectComparisons[[1]][1]
   comp2 = selectComparisons[[1]][2]
-  comp1_tb = countdata[, subset(samples, paste(cell_type, treatment, sep="_") == comp1)$samples]
-  comp2_tb = countdata[, subset(samples, paste(cell_type, treatment, sep="_") == comp2)$samples]
+  comp1_tb = countdata[, subset(samples, paste(cell_type, treatment, sep="__") == comp1)$samples]
+  comp2_tb = countdata[, subset(samples, paste(cell_type, treatment, sep="__") == comp2)$samples]
   comp_tb = data.frame(c(comp1_tb, comp2_tb), row.names = rownames(countdata), check.names = F)
   rm(comp1_tb, comp2_tb)
   
   metadata = samples[colnames(comp_tb), ]
   metadata = unite(metadata, condition, c(cell_type, treatment), remove = T)
-  # column_to_rownames(metadata, var = "samples")
   metadata$condition <- factor(metadata$condition)
   metadata <- metadata[,"condition"]
-
+  
   # make DESeq2 object from counts and metadata
   # - countData : count dataframe
   # - colData : sample metadata in the dataframe with row names as sampleID's
@@ -120,19 +119,22 @@ for(i in 1:nrow(comp)){
   
   
   # Find differential expressed genes
-  ddsMat <- DESeq(ddsMat)
+  library("BiocParallel")
+  register(MulticoreParam(((detectCores(all.tests = FALSE, logical = TRUE))*2)%/%3))
+  ddsMat <- DESeq(ddsMat, parallel = TRUE)
   
   ####################
   ## PCA Plot
   ####################
-  
-  rld <- rlog(ddsMat, blind = T)
+  rld <- vst(ddsMat)
+  # rld <- rlog(ddsMat, blind = T)
   rld_mat <- assay(rld)
   pca <- prcomp(t(rld_mat))
   PCAxy <- c(as.integer(opt$pcax),as.integer(opt$pcay)) # selected principal components
   percentVar=round(100*summary(pca)$importance[2, PCAxy],0)
   
-  meta <- data.frame(detectGroups(colnames(comp_tb)), row.names = colnames(comp_tb))
+  # meta <- data.frame(detectGroups(colnames(comp_tb)), row.names = colnames(comp_tb))
+  meta = data.frame(metadata, row.names = colnames(comp_tb))
   colnames(meta)[1] <- "group"
   df <- cbind(meta, pca$x[, PCAxy])
   
@@ -171,39 +173,56 @@ for(i in 1:nrow(comp)){
                             multiVals = "first")
   
   # Subset for only significant genes( q < 0.05)
-  results_sig <- subset(results, pvalue < opt$fdrval)
+  results_sig <- subset(results, pvalue < opt$fdrval &
+                          (log2FoldChange < -2 | log2FoldChange > 2))
   comp_tb$row <- rownames(comp_tb)
   results_sig$row <- rownames(results_sig)
   sig_tb = merge(x = as.data.frame(results_sig), y = comp_tb, by = "row", all=F)
   colnames(sig_tb)[1] <- "geneid"
-  fwrite(x = sig_tb, 
-         file = paste0(opt$outdir, comp[i, ], "/results_gene_annotated_significant.tsv"), 
+  fwrite(x = sig_tb,
+         file = paste0(opt$outdir, comp[i, ], "/results_gene_annotated_significant.tsv"),
          sep = '\t', row.names = F)
+
+  # 
+  # mat_t <- biomaRt::select(organism, keys=row.names(mat), columns = c("SYMBOL", "ENSEMBL"), keytype = "ENSEMBL")
+  # mat_t$SYMBOL[is.na(mat_t$SYMBOL)] <- mat_t$ENSEMBL[is.na(mat_t$SYMBOL)]
+  # mat_t = subset(mat_t, !duplicated(subset(mat_t, select=c("ENSEMBL"))))
+  # rownames(mat_t) <- mat_t$ENSEMBL
+  # rownames(mat) <- mat_t$SYMBOL
   
-  # Gather 30 significant genes and make matrix
-  if (nrow(assay(rld[row.names(results_sig)])) < opt$ntopgene ){
-    # mat <- assay(rld[row.names(results_sig)])[1:nrow(assay(rld[row.names(results_sig)])), ]
-    mat <- assay(rld[row.names(results_sig)])
-  }else {
-    mat <- assay(rld[row.names(results_sig)])[1:opt$ntopgene, ]
-  }
-
-  mat_t <- biomaRt::select(organism, keys=row.names(mat), columns = c("SYMBOL", "ENSEMBL"), keytype = "ENSEMBL")
-  mat_t$SYMBOL[is.na(mat_t$SYMBOL)] <- mat_t$ENSEMBL[is.na(mat_t$SYMBOL)]
-  mat_t = subset(mat_t, !duplicated(subset(mat_t, select=c("ENSEMBL"))))
-  rownames(mat_t) <- mat_t$ENSEMBL
-  rownames(mat) <- mat_t$SYMBOL
-
   # Make Heatmap with pheatmap function
   pdf(NULL)
-  heatmap.plot <- pheatmap(mat = mat,
-                           color = colorRampPalette(brewer.pal(9, opt$hmapcolor))(255),
-                           scale = "row",
-                           angle_col = 315,
-                           show_colnames = TRUE, 
-                           fontsize_col = 10, 
-                           fontsize_row = 10)
+  temp <- vst(ddsMat)
+  resSig <- subset(results(ddsMat), padj < 0.05 & 
+                     (log2FoldChange < -2 | log2FoldChange > 2))
+  if (length(rownames(resSig[order(resSig$padj),])) > opt$ntopgene){
+    select <- rownames(resSig[order(resSig$padj),])[1:opt$ntopgene]
+  }else {
+    select <- rownames(resSig[order(resSig$padj),])
+  }
+  if (opt$ntopgene > 200){
+    show_rownames <- FALSE
+  }else {
+    show_rownames <- TRUE
+  }
+  if (dim(assay(temp))[2] > 200){
+    show_colnames <- FALSE
+  }else {
+    show_colnames <- TRUE
+  }
   
+  heatmap.plot <- pheatmap(assay(temp)[select, ], 
+           cluster_rows=T,
+           cluster_cols=T,
+           color = colorRampPalette(rev(brewer.pal(n = 9, name = opt$hmapcolor)))(255),
+           breaks = seq(-2, 2, length.out = 255),
+           show_rownames = show_rownames,
+           show_colnames = show_colnames,
+           scale="row",
+           border_color = NA,
+           angle_col = 315,
+           fontsize_col = 5, 
+           fontsize_row = 6)
   savePlot(paste0(opt$outdir, comp[i, ], "/heatmap"), heatmap.plot)
   
   ####################
@@ -302,8 +321,8 @@ for(i in 1:nrow(comp)){
   
   ranks <- deframe(res2)
   
-  pathways.gobp <- gmtPathways("scripts/MSigDB_v7.3/c5.go.bp.v7.3.symbols.gmt")
-  pathways.reactome <- gmtPathways("scripts/MSigDB_v7.3/c2.cp.reactome.v7.3.symbols.gmt")
+  pathways.gobp <- gmtPathways("scripts/MSigDB/c5.go.bp.v7.5.1.symbols.gmt")
+  pathways.reactome <- gmtPathways("scripts/MSigDB/c2.cp.reactome.v7.5.1.symbols.gmt")
   
   fgseaRes.gobp <- fgsea(pathways=pathways.gobp, stats=ranks, min = 15, max = 500)
   fgseaRes.reactome <- fgsea(pathways=pathways.reactome, stats=ranks, min = 15, max = 500)
