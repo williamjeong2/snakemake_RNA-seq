@@ -22,26 +22,21 @@ THREADS = os.cpu_count()
 # read the tabulated separated table containing the sample, condition and fastq file information∂DE
 units = pd.read_excel(config["units"], sheet_name = "samples", dtype = str, engine = 'openpyxl').set_index(["fastq-file-name"], drop=False)
 units.index.names = ['sample']
-units.index = units.index.str.replace('.fq', '')
-units.index = units.index.str.replace('.gz', '')
-units.index = units.index.str.replace('.fastq', '')
-units.index = units.index.str.replace('.txt', '')
+units.index = units.index.str.replace('.fq', '', regex=False)
+units.index = units.index.str.replace('.gz', '', regex=False)
+units.index = units.index.str.replace('.fastq', '', regex=False)
+units.index = units.index.str.replace('.txt', '', regex=False)
 # fill the file path existing the sample
 input_list = list(set([i.split('_')[0] for i in os.listdir("data/") if i.split('_')[0] in units.index]))
-for fname in os.listdir("/data"):
-    fname = fname.split('_1')[0]
+for fname in os.listdir("data"):
     if fname.endswith('_1.fastq'):
-        units.loc[[fname], 'fq1'] = "data/" + fname.split('.')[0] + "_1.fastq"
+        units.loc[[fname.split('_1.')[0]], 'fq1'] = "data/" + fname.split('_1.')[0] + "_1.fastq"
     if fname.endswith('_2.fastq'):
-        fname = fname.split('_2')[0]
-        units.loc[[fname], 'fq2'] = "data/" + fname.split('.')[0] + "_2.fastq"
-for fname in os.listdir("/data"):
-    fname = fname.split('_1')[0]
+        units.loc[[fname.split('_2.')[0]], 'fq2'] = "data/" + fname.split('_2.')[0] + "_2.fastq"
     if fname.endswith('_1.fq.gz'):
-        units.loc[[fname], 'fq1'] = "data/" + fname.split('.')[0] + "_1.fq.gz"
+        units.loc[[fname.split('_1.')[0]], 'fq1'] = "data/" + fname.split('_1.')[0] + "_1.fq.gz"
     if fname.endswith('_2.fq.gz'):
-        fname = fname.split('_2')[0]
-        units.loc[[fname], 'fq2'] = "data/" + fname.split('.')[0] + "_2.fq.gz"
+        units.loc[[fname.split('_2.')[0]], 'fq2'] = "data/" + fname.split('_2.')[0] + "_2.fq.gz"
 units.dropna(inplace = True)
 # create lists containing the sample names and conditions
 SAMPLES = units.index.get_level_values('sample').unique().tolist()
@@ -83,7 +78,8 @@ rule all:
         WORKING_DIR + "genome/genome.gtf",
         RESULT_DIR + 'gene_FPKM.csv',
         RESULT_DIR + "counts.txt",
-        RESULT_DIR + "multiqc/multiqc_report.html"
+        RESULT_DIR + "multiqc/multiqc_report.html",
+        RESULT_DIR + "fastp_QC_table.tsv"
     message:
         "Job done!"
 
@@ -122,51 +118,9 @@ rule fastp:
             --detect_adapter_for_pe \
             --in1 {input[0]} --in2 {input[1]} --out1 {output.fq1} --out2 {output.fq2} 2> {log}")
 
-#rule fastqc:
-#    input:
-#        get_fastq
-#    output:
-#        html1 = RESULT_DIR + "fastqc/{sample}_fastqc.html"
-#    threads: THREADS
-#    params:
-#        sampleName = "{sample}",
-#        path = RESULT_DIR + "fastqc/"
-#    run:
-#        if sample_is_single_end(params.sampleName):
-#            shell("fastqc -t {threads} {input[0]} --outdir={params.path}")
-#        else:
-#            shell("fastqc -t {threads} {input[0]} {input[1]} --outdir={params.path}")
-#           
-
 #########################
 # RNA-Seq read alignement
 #########################
-# if config["need_indexed"].upper().find("NEED") >= 0:
-#     if config["organism"].upper().find("HOMO") >= 0 or config["organism"].upper().find("HUMAN") >= 0:
-#         rule ref_download_hg:
-#             output:
-#                 fasta = WORKING_DIR + "genome/genome.fa",
-#                 gtf = WORKING_DIR + "genome/genome.gtf"
-#             params:
-#                 version = config["ref"]["hg_release_ver"], # release version, It must be string
-#                 outdir = WORKING_DIR + "genome/"
-#             shell:"""
-#             mkdir -p {params.outdir} && \
-#             wget ftp://ftp.ensembl.org/pub/release-{params.version}/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz -O genome.fa.gz && gunzip -c genome.fa.gz > {output.fasta} && \
-#             wget ftp://ftp.ensembl.org/pub/release-{params.version}/gtf/homo_sapiens/Homo_sapiens.GRCh38.{params.version}.gtf.gz -O genome.gtf.gz && gunzip -c genome.gtf.gz > {output.gtf}"""
-#     elif config["organism"].upper().find("MUS") >= 0 or config["organism"].upper().find("MOUSE") >= 0:
-#         rule ref_download_mm:
-#             output:
-#                 fasta = WORKING_DIR + "genome/genome.fa",
-#                 gtf = WORKING_DIR + "genome/genome.gtf"
-#             params:
-#                 version = config["ref"]["mm_release_ver"], # release version, It must be string
-#                 outdir = WORKING_DIR + "genome/"
-#             shell:"""
-#             mkdir -p {params.outdir} && \
-#             wget ftp://ftp.ensembl.org/pub/release-{params.version}/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna.primary_assembly.fa.gz -O genome.fa.gz && tar -zxvf genome.fa.gz -C {params.outdir} && \
-#             wget ftp://ftp.ensembl.org/pub/release-{params.version}/gtf/mus_musculus/Mus_musculus.GRCm38.{params.version}.gtf.gz -O genome.gtf.gz && tar -zxvf genome.gtf.gz -C {params.outdir}"""
-
 
 if config["aligner"].upper().find("HISAT2") >= 0:
     if config["organism"].upper().find("HOMO") >= 0 or config["organism"].upper().find("HUMAN") >= 0:
@@ -332,7 +286,6 @@ rule get_rid_of_zero_counts:
 
 rule qc_table_maker:
     input:
-        RESULT_DIR + "logs/fastp/",
         expand(RESULT_DIR + "logs/fastp/{sample}.log.txt", sample = SAMPLES)
     output:
         RESULT_DIR + "fastp_QC_table.tsv"
@@ -377,3 +330,20 @@ rule enrichment:
     --fdrval {params.heatmap_pval} --ntopgene {params.heatmapTopGenes} --hmapcolor {params.heatmapColor} \
     --gseafdr {params.gsea_fdr} --gseapval {params.gsea_pval}
     """
+
+rule fastqc:
+   input:
+       fq1  = temp(WORKING_DIR + "trimmed/" + "{sample}_R1_trimmed.fq.gz"),
+       fq2  = temp(WORKING_DIR + "trimmed/" + "{sample}_R2_trimmed.fq.gz")
+   output:
+       html1 = RESULT_DIR + "fastqc/{sample}_fastqc.html"
+   threads: THREADS
+   params:
+       sampleName = "{sample}",
+       path = RESULT_DIR + "fastqc/"
+   run:
+       if sample_is_single_end(params.sampleName):
+           shell("fastqc -t {threads} {input[0]} --outdir={params.path}")
+       else:
+           shell("fastqc -t {threads} {input[0]} {input[1]} --outdir={params.path}")
+          
