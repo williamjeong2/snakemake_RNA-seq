@@ -35,6 +35,13 @@ for fname in os.listdir("/data"):
     if fname.endswith('_2.fastq'):
         fname = fname.split('_2')[0]
         units.loc[[fname], 'fq2'] = "data/" + fname.split('.')[0] + "_2.fastq"
+for fname in os.listdir("/data"):
+    fname = fname.split('_1')[0]
+    if fname.endswith('_1.fq.gz'):
+        units.loc[[fname], 'fq1'] = "data/" + fname.split('.')[0] + "_1.fq.gz"
+    if fname.endswith('_2.fq.gz'):
+        fname = fname.split('_2')[0]
+        units.loc[[fname], 'fq2'] = "data/" + fname.split('.')[0] + "_2.fq.gz"
 units.dropna(inplace = True)
 # create lists containing the sample names and conditions
 SAMPLES = units.index.get_level_values('sample').unique().tolist()
