@@ -59,7 +59,7 @@ savePlot <- function(path, plot, width = 7, height = 7){
 ####################
 
 # Import counts table
-countdata <- read.table(opt$count, header = TRUE, row.names = 1, sep = "\t")
+countdata <- read.table(opt$count, header = TRUE, row.names = 1, sep = "\t", check.names = F)
 
 # Remove .bam from column identifiers
 colnames(countdata) <- gsub(".sorted.bam", "", colnames(countdata), fixed = T)
