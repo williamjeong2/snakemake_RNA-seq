@@ -1,5 +1,4 @@
 ---
-threads: 30 # # of thread
 organism: homo_sapiens # human or mouse
 need_indexed: need # need or not
 aligner: hisat2 # HISAT2 or STAR

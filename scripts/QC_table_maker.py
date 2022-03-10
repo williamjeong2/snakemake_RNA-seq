@@ -19,7 +19,7 @@ res = pd.DataFrame(columns=['Sample Name', 'before_total reads', 'before_total b
                                              'before_Q20 bases', 'before_Q30 bases',
                                              'after_total reads', 'after_total bases',
                                              'after_Q20 bases', 'after_Q30 bases'])
-index_list = [f.split('.')[1].replace('/','') for f in file_list]
+index_list = [f.rsplit('/', 1)[1].split('.')[0] for f in file_list]
 res_index = i = 0
 
 for file_name in file_list:

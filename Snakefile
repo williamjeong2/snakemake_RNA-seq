@@ -227,9 +227,11 @@ rule stringtie:
         r3 = temp(WORKING_DIR + "stringtie/{sample}/cov_ref.gtf")
     message:
         "assemble RNA-Seq alignments into potential transcripts."
-    threads: THREADS
+    threads: THREADS//10
     params:
         gtf = WORKING_DIR + "genome/genome.gtf"
+    log:
+        RESULT_DIR + "logs/stringtie/{sample}.log.txt"
     shell:
         "stringtie -p {threads} -G {params.gtf} --rf -e -B -o {output.r1} -A {output.r2} -C {output.r3} --rf {input.bams} 2> {log}"
 
@@ -286,6 +288,7 @@ rule get_rid_of_zero_counts:
 
 rule qc_table_maker:
     input:
+        RESULT_DIR + "logs/fastp/", # need stay for script below
         expand(RESULT_DIR + "logs/fastp/{sample}.log.txt", sample = SAMPLES)
     output:
         RESULT_DIR + "fastp_QC_table.tsv"
@@ -309,7 +312,7 @@ rule multiqc:
     log:
         RESULT_DIR + "logs/multiqc.log"
     shell:
-        "multiqc -f -p {params.data_dir} -o {params.res_dir}"
+        "multiqc -f -p {params.data_dir} -o {params.res_dir} 2> {log}"
 
 #########################################
 # Gene enrichment
