@@ -12,7 +12,7 @@ def search(dirname, extension = '.txt'):
             file_list.append(full_filename)
     return file_list
             
-file_list = search(snakemake.input[0])
+file_list = search(snakemake.params[0])
 file_list.sort()
 
 res = pd.DataFrame(columns=['Sample Name', 'before_total reads', 'before_total bases',

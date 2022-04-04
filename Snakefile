@@ -237,7 +237,7 @@ rule stringtie:
 
 rule create_PKM_table:
     input:
-        WORKING_DIR
+        # WORKING_DIR,
         expand(WORKING_DIR + "stringtie/{sample}/transcript.gtf", sample = SAMPLES)
     output:
         r1 = RESULT_DIR + "gene_FPKM.csv",
@@ -288,12 +288,13 @@ rule get_rid_of_zero_counts:
 
 rule qc_table_maker:
     input:
-        RESULT_DIR + "logs/fastp/", # need stay for script below
         expand(RESULT_DIR + "logs/fastp/{sample}.log.txt", sample = SAMPLES)
     output:
         RESULT_DIR + "fastp_QC_table.tsv"
     message:
         "Generate fastp QC table through fastp QC reports"
+    params:
+        RESULT_DIR + "logs/fastp/"
     script:
         "scripts/QC_table_maker.py"
 
