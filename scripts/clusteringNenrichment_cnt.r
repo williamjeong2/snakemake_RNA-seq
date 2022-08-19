@@ -1,5 +1,5 @@
-list.of.packages <- c("tidyverse", "optparse", "readxl", "data.table")
-list.of.bio.packages <- c("DESeq2", "DEGreport", "ggplot2", "clusterProfiler", "DOSE", "org.Hs.eg.db", "pheatmap", "org.Mm.eg.db",
+list.of.packages <- c("optparse", "readxl", "data.table", "ggplot2", "tidyr", "dplyr", "tibble")
+list.of.bio.packages <- c("DESeq2", "DEGreport", "clusterProfiler", "DOSE", "org.Hs.eg.db", "pheatmap", "org.Mm.eg.db",
                           "genefilter", "RColorBrewer", "GO.db", "topGO", "gage", "ggsci", "curl", "biomaRt", "fgsea", "EnhancedVolcano")
 
 # Install Require packages
@@ -18,16 +18,16 @@ lapply(list.of.packages, require, character.only = TRUE)
 # arguments to provide
 option_list = list(
   # default params
-  make_option("--count", type="character", metavar="character"), # read count data 
-  make_option("--metadata", type="character", metavar="character"), # "samples.tsv"
-  make_option("--outdir", type="character", metavar="character"), # dir to save
+  make_option("--count", type="character", default="results/counts.txt", metavar="character"), # read count data 
+  make_option("--metadata", type="character", default="data/sample-list.xlsx", metavar="character"), # "samples.tsv"
+  make_option("--outdir", type="character", default="results/visualization/", metavar="character"), # dir to save
   # PCA params
   make_option("--pcax", type="character", default="1", metavar="character"), # string
   make_option("--pcay", type="character", default="2", metavar="character"), # string
   # heatmap parmas
   make_option("--fdrval", type="double", default=0.05, metavar="number"),
-  make_option("--ntopgene", type="integer", default= 50, metavar="number"),
-  make_option("--hmapcolor", type="character", default="RdBu", metavar="character"),
+  make_option("--ntopgene", type="integer", default= 30, metavar="number"),
+  make_option("--hmapcolor", type="character", default="YlOrBr", metavar="character"), # RdBu
   # GSEA
   make_option("--gseafdr", type="double", default=0.25, metavar="number"),
   make_option("--gseapval", type="double", default=0.01, metavar="number")
@@ -45,7 +45,7 @@ detectGroups <- function (x){  # x are col names
 }
 
 savePlot <- function(path, plot, width = 7, height = 7){
-  for(i in c("png", "svg")) {
+  for(i in c("svg")) {
     ggsave(filename = paste0(path, ".", i),
            plot = plot,
            device = i, scale = 2,
@@ -93,6 +93,29 @@ for(i in 1:nrow(comp)){
   ifelse(!dir.exists(paste0(opt$outdir, comp[i, ])), dir.create(paste0(opt$outdir, comp[i, ]), showWarnings = FALSE, recursive = T), print("Directory already created"))
 }
 
+metad<- samples[colnames(countdata), ]
+metad<- metad[, 'cell_type']
+
+dds <- DESeqDataSetFromMatrix(
+  countData = countdata[,1:ncol(countdata)],
+  colData = samples[colnames(countdata), ],
+  design = ~ treatment + cell_type
+)
+dds <- DESeq(dds, parallel = TRUE)
+
+dds_norm <- vst(dds)
+pcaData <- plotPCA(dds_norm, intgroup=c("treatment", "cell_type"), returnData=TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+shapes = c(16,17,15,3,7,8,   1,2,4:6,9:15,18:25)
+theme<-theme(panel.background = element_blank(),panel.border=element_rect(fill=NA),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),strip.background=element_blank(),axis.text.x=element_text(colour="black"),axis.text.y=element_text(colour="black"),axis.ticks=element_line(colour="black"),plot.margin=unit(c(1,1,1,1),"line"), aspect.ratio=1)
+p <- ggplot(pcaData, aes(PC1, PC2, color=treatment, shape=cell_type, label=row.names(pcaData))) + scale_shape_manual(values= shapes) + geom_text(aes(colour = treatment), vjust = -0.5) +
+  geom_point(size=3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  coord_fixed()  + theme
+savePlot(paste0(opt$outdir, "/PCA"), p)
+
+
 for(i in 1:nrow(comp)){
   # get comparison value
   selectComparisons = strsplit(comp[i, ], "-")
@@ -120,7 +143,7 @@ for(i in 1:nrow(comp)){
   
   # Find differential expressed genes
   library("BiocParallel")
-  register(MulticoreParam(((detectCores(all.tests = FALSE, logical = TRUE))*2)%/%3))
+  # register(MulticoreParam(((detectCores(all.tests = FALSE, logical = TRUE))*2)%/%3))
   ddsMat <- DESeq(ddsMat, parallel = TRUE)
   
   ####################
@@ -139,11 +162,11 @@ for(i in 1:nrow(comp)){
   df <- cbind(meta, pca$x[, PCAxy])
   
   if(ncol(comp_tb)<20){ # change size depending of # samples
-    p = ggplot(df, aes(x=PC1, y=PC2+.5, color=group, label=row.names(df)), size=5) + geom_point(aes(x=PC1, y= PC2, color = group), size=5)
+    p = ggplot(df, aes(x=PC1, y=PC2+.5, color=group, label=row.names(df)), size=5) + geom_point(aes(x=PC1, y= PC2, color = group), size=5) + geom_text(aes(colour = group), vjust = -0.5)
   }else if(ncol(comp_tb)<50){
-    p = ggplot(df, aes(x=PC1, y=PC2+.5, color=group, label=row.names(df)), size=3) + geom_point(aes(x=PC1, y= PC2, color = group), size=3)
+    p = ggplot(df, aes(x=PC1, y=PC2+.5, color=group, label=row.names(df)), size=3) + geom_point(aes(x=PC1, y= PC2, color = group), size=3) + geom_text(aes(colour = group), vjust = -0.5)
   }else{
-    p = ggplot(df, aes(x=PC1, y=PC2+.5, color=group, label=row.names(df)), size=2) + geom_point(aes(x=PC1, y= PC2, color = group), size=2)
+    p = ggplot(df, aes(x=PC1, y=PC2+.5, color=group, label=row.names(df)), size=2) + geom_point(aes(x=PC1, y= PC2, color = group), size=2) + geom_text(aes(colour = group), vjust = -0.5)
   }
   
   # for showing shapes on ggplot2. The first 6 are default. Default mapping can only show 6 types.
@@ -195,35 +218,38 @@ for(i in 1:nrow(comp)){
   temp <- vst(ddsMat)
   resSig <- subset(results(ddsMat), padj < 0.05 & 
                      (log2FoldChange < -2 | log2FoldChange > 2))
-  if (length(rownames(resSig[order(resSig$padj),])) > opt$ntopgene){
-    select <- rownames(resSig[order(resSig$padj),])[1:opt$ntopgene]
-  }else {
-    select <- rownames(resSig[order(resSig$padj),])
-  }
-  if (opt$ntopgene > 200){
-    show_rownames <- FALSE
-  }else {
-    show_rownames <- TRUE
-  }
-  if (dim(assay(temp))[2] > 200){
-    show_colnames <- FALSE
-  }else {
-    show_colnames <- TRUE
+  if (nrow(as.data.frame(resSig)) != 0) {
+    if (length(rownames(resSig[order(resSig$padj),])) > opt$ntopgene){
+      select <- rownames(resSig[order(resSig$padj),])[1:opt$ntopgene]
+    }else {
+      select <- rownames(resSig[order(resSig$padj),])
+    }
+    if (opt$ntopgene > 200){
+      show_rownames <- FALSE
+    }else {
+      show_rownames <- TRUE
+    }
+    if (dim(assay(temp))[2] > 200){
+      show_colnames <- FALSE
+    }else {
+      show_colnames <- TRUE
+    }
+    heatmap.plot <- pheatmap(assay(temp)[select, ], 
+            cluster_rows=T,
+            cluster_cols=T,
+            color = colorRampPalette(rev(brewer.pal(n = 9, name = opt$hmapcolor)))(255),
+            breaks = seq(-2, 2, length.out = 255),
+            show_rownames = show_rownames,
+            show_colnames = show_colnames,
+            scale="row",
+            border_color = NA,
+            angle_col = 315,
+            fontsize_col = 5, 
+            fontsize_row = 6)
+    savePlot(paste0(opt$outdir, comp[i, ], "/heatmap"), heatmap.plot)
+
   }
   
-  heatmap.plot <- pheatmap(assay(temp)[select, ], 
-           cluster_rows=T,
-           cluster_cols=T,
-           color = colorRampPalette(rev(brewer.pal(n = 9, name = opt$hmapcolor)))(255),
-           breaks = seq(-2, 2, length.out = 255),
-           show_rownames = show_rownames,
-           show_colnames = show_colnames,
-           scale="row",
-           border_color = NA,
-           angle_col = 315,
-           fontsize_col = 5, 
-           fontsize_row = 6)
-  savePlot(paste0(opt$outdir, comp[i, ], "/heatmap"), heatmap.plot)
   
   ####################
   ## Volcano Plot
