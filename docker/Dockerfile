@@ -27,8 +27,7 @@ RUN apt-get update -y && \
     LANG=en_US.UTF-8 && \
     /usr/sbin/update-locale LANG=en_US.UTF-8 && \
     TERM=xterm && \
-    apt-get update && \
-    apt-get upgrade
+    apt-get update 
 
 RUN Rscript -e 'install.packages("optparse", repos="http://cran.rstudio.com/", dependencies=TRUE)' && \
     Rscript -e 'install.packages("data.table", repos="http://cran.rstudio.com/", dependencies=TRUE)' && \
