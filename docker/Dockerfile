@@ -53,6 +53,7 @@ RUN Rscript -e 'install.packages("optparse", repos="http://cran.rstudio.com/", d
     Rscript -e 'BiocManager::install("biomaRt", suppressUpdates = TRUE)' && \
     Rscript -e 'BiocManager::install("EnhancedVolcano", suppressUpdates = TRUE)' && \
     Rscript -e 'BiocManager::install("fgsea", suppressUpdates = TRUE)' && \
+    Rscript -e 'BiocManager::install("umap", suppressUpdates = TRUE)' && \
     Rscript -e 'BiocManager::install("DEGreport", suppressUpdates = TRUE)'
 
 # install miniconda to /miniconda

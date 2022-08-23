@@ -1,5 +1,5 @@
 list.of.packages <- c("optparse", "readxl", "data.table", "ggplot2", "tidyr", "dplyr", "tibble")
-list.of.bio.packages <- c("DESeq2", "DEGreport", "clusterProfiler", "DOSE", "org.Hs.eg.db", "pheatmap", "org.Mm.eg.db",
+list.of.bio.packages <- c("DESeq2", "DEGreport", "clusterProfiler", "DOSE", "org.Hs.eg.db", "pheatmap", "org.Mm.eg.db", "umap",
                           "genefilter", "RColorBrewer", "GO.db", "topGO", "gage", "ggsci", "curl", "biomaRt", "fgsea", "EnhancedVolcano")
 
 # Install Require packages
@@ -104,6 +104,8 @@ dds <- DESeqDataSetFromMatrix(
 dds <- DESeq(dds, parallel = TRUE)
 
 dds_norm <- vst(dds)
+
+## PCA
 pcaData <- plotPCA(dds_norm, intgroup=c("treatment", "cell_type"), returnData=TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 shapes = c(16,17,15,3,7,8,   1,2,4:6,9:15,18:25)
@@ -112,8 +114,26 @@ p <- ggplot(pcaData, aes(PC1, PC2, color=treatment, shape=cell_type, label=row.n
   geom_point(size=3) +
   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
   ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  ggtitle("Principal component analysis (PCA)") + 
   coord_fixed()  + theme
-savePlot(paste0(opt$outdir, "/PCA"), p)
+savePlot(paste0(opt$outdir, "/PCA_all"), p)
+
+## UMAP
+normalized_counts <- assay(dds_norm) %>% t()  # We need to transpose this data so each row is a sample
+
+umap_results <- umap::umap(normalized_counts) # Now perform UMAP on the normalized data
+umap_plot_df <- data.frame(umap_results$layout) %>% 
+  tibble::rownames_to_column("samples") %>%
+  dplyr::inner_join(samples[colnames(countdata),] %>% select(c("samples", "treatment", "cell_type")), by = "samples")
+rownames(umap_plot_df) = umap_plot_df$samples
+p <- ggplot(umap_plot_df, aes(x = X1, y = X2, color = treatment, shape = cell_type, label=row.names(umap_plot_df))) + scale_shape_manual(values= shapes) + geom_text(aes(colour = treatment), vjust = -0.5) +
+  geom_point(size=3) +
+  xlab(paste0("UMAP Dimension 1")) +
+  ylab(paste0("UMAP Dimension 2")) +
+  ggtitle("UMAP of All Samples") + 
+  coord_fixed()  + theme
+savePlot(paste0(opt$outdir, "/UMAP_all"), p)
+
 
 
 for(i in 1:nrow(comp)){
@@ -150,7 +170,6 @@ for(i in 1:nrow(comp)){
   ## PCA Plot
   ####################
   rld <- vst(ddsMat)
-  # rld <- rlog(ddsMat, blind = T)
   rld_mat <- assay(rld)
   pca <- prcomp(t(rld_mat))
   PCAxy <- c(as.integer(opt$pcax),as.integer(opt$pcay)) # selected principal components
@@ -197,7 +216,7 @@ for(i in 1:nrow(comp)){
   
   # Subset for only significant genes( q < 0.05)
   results_sig <- subset(results, pvalue < opt$fdrval &
-                          (log2FoldChange < -2 | log2FoldChange > 2))
+                          (log2FoldChange < -0.7 | log2FoldChange > 0.7))
   comp_tb$row <- rownames(comp_tb)
   results_sig$row <- rownames(results_sig)
   sig_tb = merge(x = as.data.frame(results_sig), y = comp_tb, by = "row", all=F)
@@ -217,7 +236,7 @@ for(i in 1:nrow(comp)){
   pdf(NULL)
   temp <- vst(ddsMat)
   resSig <- subset(results(ddsMat), padj < 0.05 & 
-                     (log2FoldChange < -2 | log2FoldChange > 2))
+                     (log2FoldChange < -1 | log2FoldChange > 1))
   if (nrow(as.data.frame(resSig)) != 0) {
     if (length(rownames(resSig[order(resSig$padj),])) > opt$ntopgene){
       select <- rownames(resSig[order(resSig$padj),])[1:opt$ntopgene]
@@ -269,9 +288,9 @@ for(i in 1:nrow(comp)){
   ## If fold-change > 2 and pvalue > 0.05 (Increased significant)
   ## If fold-change < -2 and pvalue > 0.05 (Decreased significant)
   data <- data %>%
-    mutate(color = case_when(data$lfc > 2 & data$padj < 0.05 ~ "Increased",
-                             data$lfc < -2 & data$padj < 0.05 ~ "Decreased",
-                             data$lfc > -2 | data$lfc < 2 | data$padj > 0.05 ~ "No Significant"))
+    mutate(color = case_when(data$lfc > 1 & data$padj < 0.05 ~ "Increased",
+                             data$lfc < -1 & data$padj < 0.05 ~ "Decreased",
+                             data$lfc > -1 | data$lfc < 1 | data$padj > 0.05 ~ "No Significant"))
   
   data <- data %>% mutate(genelabels = "")
   data <- data %>% arrange(padj)
